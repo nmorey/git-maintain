@@ -1,0 +1,58 @@
+#!/bin/bash
+
+BASE_BRANCH=0
+COMMITS=""
+DO_PUSH=0
+
+usage()
+{
+	cat <<EOF
+Usage: $0 [-v <min_version>] [-c <SHA1> [-c <SHA1> [...]]]
+ -h,--help            Displays usage
+ -v <release number>  Older release to consider
+ -c <SHA1>            Commit to cherry-pick. Can be used multiple times
+ -p                   Push branches to github for Travis review
+EOF
+}
+
+while [ $# -ne 0 ]; do
+	case $1 in
+		-h|--help)
+			usage $0
+			exit 0;;
+		-v)
+			BASE_BRANCH=$2
+			shift;;
+		-c)
+			COMMITS="$COMMITS $2"
+			shift;;
+		-p)
+			DO_PUSH=1;;
+		*)
+			echo "Bad option '$1'"
+			usage
+			exit 1;;
+	esac
+	shift
+done
+STABLE_LIST=$(git branch | grep dev/stable-v[0-9][0-9]/master | sed -e 's/\*\?[[:space:]]*dev\/stable-v\([0-9][0-9]\)\/master.*$/\1/')
+
+for stable in $STABLE_LIST; do
+	if [ $stable -lt $BASE_BRANCH ]; then
+		echo "Skipping older v$stable"
+		continue
+	fi
+	echo "Backporting fo v$stable"
+	git checkout dev/stable-v$stable/master || exit 1
+
+	if [ "$COMMITS" != "" ]; then
+		git cherry-pick $COMMITS
+		if [ $? -ne 0 ]; then
+			echo "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
+			bash
+		fi
+	fi
+	if [ $DO_PUSH -ne 0 ]; then
+		git push github dev/stable-v$stable/master
+	fi
+done
