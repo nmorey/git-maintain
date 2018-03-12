@@ -9,6 +9,7 @@ opts = {
     :base_ver => 0,
     :commits => [],
     :do_push => false,
+    :do_merge => false,
     :br_suff => "master",
     :submit_stable => false
 }
@@ -26,18 +27,29 @@ optsParser.on("-p", "--[no-]push", "Push branches to github for Travis review.")
     |val| opts[:do_push] = val}
 optsParser.on("-b", "--branch-suffix <suffix>", "Branch suffix. Default is 'master'.") {
     |val| opts[:br_suff] = val}
+optsParser.on("-m", "--merge <suffix>", "Merge branch with suffix.") {
+    |val| opts[:do_merge] = val}
 optsParser.on("--submit-stable", "Submit to stable repo.") {
     |val| opts[:submit_stable] = true}
 
 rest = optsParser.parse!(ARGV);
 raise("Extra Unexpected extra arguments provided: " + rest.map(){|x|"'" + x + "'"}.join(", ")) if rest.length != 0
 
+if opts[:do_merge] != false then
+    if opts[:commits].length != 0 then
+        raise "Cannot merge and cherry pick commits at the same time"
+    end
+    if opts[:submit_stable] != false
+        raise "Cannot merge and submit to stable at the same time"
+    end
+end
 if opts[:submit_stable] == true then
     if opts[:br_suff] != "master" then
         raise "Only master suffixed branches can be pushed to the stable repo"
     end
     `git fetch stable`
 end
+
 STABLE_LIST=`git branch`.split("\n").map(){|x|
     x=~ /dev\/stable-v[0-9][0-9]\/#{opts[:br_suff]}/ ?
         x.gsub(/\*?\s*dev\/stable-v([0-9][0-9])\/#{opts[:br_suff]}\s*$/, '\1') :
@@ -61,6 +73,14 @@ STABLE_LIST.each(){|stable|
         `git cherry-pick #{opts[:commits].join(" ")}`
         if $? != 0 then
             puts "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
+			`bash`
+            puts "Continuing..."
+		end
+    end
+    if opts[:do_merge] != false then
+        puts `git merge dev/stable-v#{stable}/#{opts[:do_merge]}`
+        if $? != 0 then
+            puts "Merge failure. Starting bash for manual fixes. Exit shell to continue"
 			`bash`
             puts "Continuing..."
 		end
