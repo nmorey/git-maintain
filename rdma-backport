@@ -1,63 +1,57 @@
-#!/bin/bash
+#!/usr/bin/ruby
 
-BASE_BRANCH=0
-COMMITS=""
-DO_PUSH=0
-BR_SUFF="master"
+require 'optparse'
 
-usage()
-{
-	cat <<EOF
-Usage: $0 [-v <min_version>] [-c <SHA1> [-c <SHA1> [...]]]
- -h,--help            Displays usage
- -v <release number>  Older release to consider
- -c <SHA1>            Commit to cherry-pick. Can be used multiple times
- -p                   Push branches to github for Travis review
- -b <branch suffix>   Default is 'master'
-EOF
+opts = {
+    :base_ver => 0,
+    :commits => [],
+    :do_push => false,
+    :br_suff => "master",
 }
 
-while [ $# -ne 0 ]; do
-	case $1 in
-		-h|--help)
-			usage $0
-			exit 0;;
-		-v)
-			BASE_BRANCH=$2
-			shift;;
-		-c)
-			COMMITS="$COMMITS $2"
-			shift;;
-		-p)
-			DO_PUSH=1;;
-		-b)
-			BR_SUFF=$2
-			shift;;
-		*)
-			echo "Bad option '$1'"
-			usage
-			exit 1;;
-	esac
-	shift
-done
-STABLE_LIST=$(git branch | grep dev/stable-v[0-9][0-9]/$BR_SUFF | sed -e 's/\*\?[[:space:]]*dev\/stable-v\([0-9][0-9]\)\/'$BR_SUFF'.*$/\1/')
+optsParser = OptionParser.new(nil, 60)
+optsParser.banner = "Usage: #{__FILE__}  [-v <min_version>] [-c <SHA1> [-c <SHA1> [...]]]"
+optsParser.separator ""
+optsParser.separator "Options:"
+optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
+optsParser.on("-v", "--base-version <[0-9]*>", Integer, "Older release to consider.") {
+    |val| opts[:base_ver] = val}
+optsParser.on("-c", "--sha1 <sha1>", String, "Commit to cherry-pick. Can be used multiple time.") {
+    |val| opts[:commits] << val}
+optsParser.on("-p", "--[no-]push", "Push branches to github for Travis review.") {
+    |val| opts[:do_push] = val}
+optsParser.on("-b", "--branch-suffix <suffix>", "Branch suffix. Default is 'master'.") {
+    |val| opts[:br_suff] = val}
 
-for stable in $STABLE_LIST; do
-	if [ $stable -lt $BASE_BRANCH ]; then
-		echo "Skipping older v$stable"
-		continue
-	fi
-	echo "Backporting fo v$stable"
-	git checkout dev/stable-v$stable/$BR_SUFF || exit 1
+rest = optsParser.parse!(ARGV);
 
-	if [ "$COMMITS" != "" ]; then
-		git cherry-pick $COMMITS
-		if [ $? -ne 0 ]; then
-			echo "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
-			bash
-		fi
-	fi
-	if [ $DO_PUSH -ne 0 ]; then
-		git push github dev/stable-v$stable/$BR_SUFF
-	fi
-done
+#`git fetch stable`
+STABLE_LIST=`git branch`.split("\n").map(){|x|
+    x=~ /dev\/stable-v[0-9][0-9]\/#{opts[:br_suff]}/ ?
+        x.gsub(/\*?\s*dev\/stable-v([0-9][0-9])\/#{opts[:br_suff]}\s*$/, '\1') :
+        nil}.compact()
+
+STABLE_LIST.each(){|stable|
+    if stable.to_i < opts[:base_ver] then
+        puts "Skipping older v#{stable}"
+        next
+    end
+    puts "Backporting for v#{stable}"
+    puts `git checkout dev/stable-v#{stable}/#{opts[:br_suff]}`
+    if $? != 0 then
+        STDERR.puts "Error"
+        exit 1
+    end
+
+    if opts[:commits].length > 0 then
+        `git cherry-pick #{opts[:commits].join(" ")}`
+        if $? != 0 then
+            puts "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
+			`bash`
+            puts "Continuing..."
+		end
+    end
+    if opts[:do_push] == true then
+        puts `git push github dev/stable-v#{stable}/#{opts[:br_suff]}`
+    end
+}
