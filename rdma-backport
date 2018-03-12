@@ -2,11 +2,15 @@
 
 require 'optparse'
 
+VALID_REPO = "github"
+STABLE_REPO = "stable"
+
 opts = {
     :base_ver => 0,
     :commits => [],
     :do_push => false,
     :br_suff => "master",
+    :submit_stable => false
 }
 
 optsParser = OptionParser.new(nil, 60)
@@ -22,10 +26,18 @@ optsParser.on("-p", "--[no-]push", "Push branches to github for Travis review.")
     |val| opts[:do_push] = val}
 optsParser.on("-b", "--branch-suffix <suffix>", "Branch suffix. Default is 'master'.") {
     |val| opts[:br_suff] = val}
+optsParser.on("--submit-stable", "Submit to stable repo.") {
+    |val| opts[:submit_stable] = true}
 
 rest = optsParser.parse!(ARGV);
+raise("Extra Unexpected extra arguments provided: " + rest.map(){|x|"'" + x + "'"}.join(", ")) if rest.length != 0
 
-#`git fetch stable`
+if opts[:submit_stable] == true then
+    if opts[:br_suff] != "master" then
+        raise "Only master suffixed branches can be pushed to the stable repo"
+    end
+    `git fetch stable`
+end
 STABLE_LIST=`git branch`.split("\n").map(){|x|
     x=~ /dev\/stable-v[0-9][0-9]\/#{opts[:br_suff]}/ ?
         x.gsub(/\*?\s*dev\/stable-v([0-9][0-9])\/#{opts[:br_suff]}\s*$/, '\1') :
@@ -36,10 +48,12 @@ STABLE_LIST.each(){|stable|
         puts "Skipping older v#{stable}"
         next
     end
+    local_branch = "dev/stable-v#{stable}/#{opts[:br_suff]}"
+
     puts "Backporting for v#{stable}"
-    puts `git checkout dev/stable-v#{stable}/#{opts[:br_suff]}`
+    puts `git checkout #{local_branch}`
     if $? != 0 then
-        STDERR.puts "Error"
+        raise "Error: Failed to checkout the branch"
         exit 1
     end
 
@@ -52,6 +66,23 @@ STABLE_LIST.each(){|stable|
 		end
     end
     if opts[:do_push] == true then
-        puts `git push github dev/stable-v#{stable}/#{opts[:br_suff]}`
+        puts `git push github #{local_branch}`
+    end
+
+    if opts[:submit_stable] == true then
+        remote_branch="stable-v#{stable}"
+        remote_ref = "#{STABLE_REPO}/#{remote_branch}"
+        puts "Diff between #{local_branch} and #{remote_ref}"
+        puts `git shortlog #{local_branch} ^#{remote_ref}`
+        rep = 't'
+        while rep != "y" && rep != "n" && rep != '' do
+            puts "Do you wish to submit this branch ? (y/N): "
+            rep = STDIN.gets.chomp()
+            end
+            if rep == "y" then
+                puts `git push stable #{local_branch}:#{remote_branch}`
+            else
+                puts "Skipping submission"
+            end
     end
 }
