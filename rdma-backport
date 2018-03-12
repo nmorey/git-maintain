@@ -5,6 +5,17 @@ require 'optparse'
 VALID_REPO = "github"
 STABLE_REPO = "stable"
 
+def checkLog(br1, br2, action_msg)
+    puts "Diff between #{br1} and #{br2}"
+    puts `git shortlog #{br1} ^#{br2}`
+    rep = 't'
+    while rep != "y" && rep != "n" && rep != '' do
+        puts "Do you wish to #{action_msg} this branch ? (y/N): "
+        rep = STDIN.gets.chomp()
+    end
+    return rep
+end
+
 opts = {
     :base_ver => 0,
     :commits => [],
@@ -78,12 +89,18 @@ STABLE_LIST.each(){|stable|
 		end
     end
     if opts[:do_merge] != false then
-        puts `git merge dev/stable-v#{stable}/#{opts[:do_merge]}`
-        if $? != 0 then
-            puts "Merge failure. Starting bash for manual fixes. Exit shell to continue"
-			`bash`
-            puts "Continuing..."
-		end
+        merge_branch = "dev/stable-v#{stable}/#{opts[:do_merge]}"
+        rep = checkLog(local_branch, merge_branch, "merge")
+        if rep == "y" then
+            puts `git merge dev/stable-v#{stable}/#{opts[:do_merge]}`
+            if $? != 0 then
+                puts "Merge failure. Starting bash for manual fixes. Exit shell to continue"
+			    `bash`
+                puts "Continuing..."
+		    end
+        else
+            puts "Skipping merge"
+        end
     end
     if opts[:do_push] == true then
         puts `git push github #{local_branch}`
@@ -92,17 +109,12 @@ STABLE_LIST.each(){|stable|
     if opts[:submit_stable] == true then
         remote_branch="stable-v#{stable}"
         remote_ref = "#{STABLE_REPO}/#{remote_branch}"
-        puts "Diff between #{local_branch} and #{remote_ref}"
-        puts `git shortlog #{local_branch} ^#{remote_ref}`
-        rep = 't'
-        while rep != "y" && rep != "n" && rep != '' do
-            puts "Do you wish to submit this branch ? (y/N): "
-            rep = STDIN.gets.chomp()
-            end
-            if rep == "y" then
-                puts `git push stable #{local_branch}:#{remote_branch}`
-            else
-                puts "Skipping submission"
-            end
+        rep = checkLog(local_branch, remote_ref, "submit")
+        if rep == "y" then
+            puts `git push stable #{local_branch}:#{remote_branch}`
+        else
+            puts "Skipping submission"
+        end
+
     end
 }
