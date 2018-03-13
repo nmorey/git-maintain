@@ -17,12 +17,11 @@ def checkLog(br1, br2, action_msg)
 end
 
 opts = {
+    :action => :cp,
     :base_ver => 0,
     :commits => [],
-    :do_push => false,
     :do_merge => false,
     :br_suff => "master",
-    :submit_stable => false
 }
 
 optsParser = OptionParser.new(nil, 60)
@@ -30,33 +29,35 @@ optsParser.banner = "Usage: #{__FILE__}  [-v <min_version>] [-c <SHA1> [-c <SHA1
 optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
+optsParser.on("-a", "--action <cp,merge,push,push_stable,release,submit_release>",\
+              [:cp, :merge, :push, :push_stable, :release, :submit_release],
+              "Search mode",
+              "cp: Backport commits and eventually push them to github",
+              "merge: Merge branch with suffix specified in -m <suff> into the main branch",
+              "push: Push branches to github for validation",
+              "push_stable: Push to stable repo",
+              "release: Create new release on all concerned branches",
+              "submit_release: Push the to stable and create the release packages",
+              "Default is cp") {
+    |val| opts[:action] = val.to_sym()}
+
 optsParser.on("-v", "--base-version <[0-9]*>", Integer, "Older release to consider.") {
     |val| opts[:base_ver] = val}
 optsParser.on("-c", "--sha1 <sha1>", String, "Commit to cherry-pick. Can be used multiple time.") {
     |val| opts[:commits] << val}
-optsParser.on("-p", "--[no-]push", "Push branches to github for Travis review.") {
-    |val| opts[:do_push] = val}
 optsParser.on("-b", "--branch-suffix <suffix>", "Branch suffix. Default is 'master'.") {
     |val| opts[:br_suff] = val}
 optsParser.on("-m", "--merge <suffix>", "Merge branch with suffix.") {
     |val| opts[:do_merge] = val}
-optsParser.on("--submit-stable", "Submit to stable repo.") {
-    |val| opts[:submit_stable] = true}
 
 rest = optsParser.parse!(ARGV);
 raise("Extra Unexpected extra arguments provided: " + rest.map(){|x|"'" + x + "'"}.join(", ")) if rest.length != 0
 
-if opts[:do_merge] != false then
-    if opts[:commits].length != 0 then
-        raise "Cannot merge and cherry pick commits at the same time"
-    end
-    if opts[:submit_stable] != false
-        raise "Cannot merge and submit to stable at the same time"
-    end
-end
-if opts[:submit_stable] == true then
+if opts[:action] == :push_stable ||
+   opts[:action] == :release ||
+   opts[:action] == :submit_release then
     if opts[:br_suff] != "master" then
-        raise "Only master suffixed branches can be pushed to the stable repo"
+        raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
     end
     `git fetch stable`
 end
@@ -65,6 +66,61 @@ STABLE_LIST=`git branch`.split("\n").map(){|x|
     x=~ /dev\/stable-v[0-9][0-9]\/#{opts[:br_suff]}/ ?
         x.gsub(/\*?\s*dev\/stable-v([0-9][0-9])\/#{opts[:br_suff]}\s*$/, '\1') :
         nil}.compact()
+
+if opts[:action] == :submit_release then
+
+    remote_tags=`git ls-remote --tags #{STABLE_REPO} | egrep 'refs/tags/v[0-9.]*$'`.split("\n").map(){|x| x.gsub(/.*refs\/tags\//, '')}
+    local_tags =`git tag -l | egrep '^v[0-9.]*$'`.split("\n")
+
+    new_tags = local_tags - remote_tags
+    puts "This will officially release these tags: #{new_tags.join(", ")}"
+    rep = 't'
+    while rep != "y" && rep != "n" && rep != '' do
+        puts "Do you wish to continue this branch ? (y/N): "
+        rep = STDIN.gets.chomp()
+    end
+    if rep != 'y' then
+        raise "Aborting.."
+    end
+
+    mail_path=`mktemp`.chomp()
+    mail = File.open(mail_path, "w+")
+    mail.puts "From " + `git rev-parse HEAD`.chomp() + " " + `date`.chomp()
+    mail.puts "From: " + `git config user.name`.chomp() + " <" + `git config user.email`.chomp() +">"
+    mail.puts "To: linux-rdma <linux-rdma@vger.kernel.org>"
+    mail.puts "Date: " + `date -R`.chomp()
+    mail.puts "Subject: [ANNOUNCE] rdma-core " +
+              (new_tags.length > 1 ?
+                  (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1]) :
+                  new_tags.join(" ")) +
+                  " has been tagged/released"
+    mail.puts ""
+    mail.puts "Here's the information from the tags:"
+    new_tags.sort().each(){|tag|
+        mail.puts `git show #{tag} --no-decorate -q | awk '!p;/^-----END PGP SIGNATURE-----/{p=1}'`
+        mail.puts ""
+    }
+    mail.puts "It's available at the normal places:"
+    mail.puts ""
+    mail.puts "git://github.com/linux-rdma/rdma-core"
+    mail.puts "https://github.com/linux-rdma/rdma-core/releases"
+    mail.close()
+
+    puts `git imap-send < #{mail_path}`
+    `rm -f #{mail_path}`
+
+    puts "Last chance to cancel before submitting"
+    rep = 't'
+    while rep != "y" && rep != "n" && rep != '' do
+        puts "Do you really want to submit these releases ? (y/N): "
+        rep = STDIN.gets.chomp()
+    end
+    if rep != 'y' then
+        raise "Aborting.."
+    end
+    puts `git-release.ruby2.1`
+    exit 0
+end
 
 STABLE_LIST.each(){|stable|
     if stable.to_i < opts[:base_ver] then
@@ -80,15 +136,17 @@ STABLE_LIST.each(){|stable|
         exit 1
     end
 
-    if opts[:commits].length > 0 then
-        `git cherry-pick #{opts[:commits].join(" ")}`
-        if $? != 0 then
-            puts "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
-			`bash`
-            puts "Continuing..."
-		end
-    end
-    if opts[:do_merge] != false then
+    case opts[:action]
+    when :cp
+        if opts[:commits].length > 0 then
+            `git cherry-pick #{opts[:commits].join(" ")}`
+            if $? != 0 then
+                puts "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
+			    `bash`
+                puts "Continuing..."
+		    end
+        end
+    when :merge
         merge_branch = "dev/stable-v#{stable}/#{opts[:do_merge]}"
         rep = checkLog(local_branch, merge_branch, "merge")
         if rep == "y" then
@@ -100,21 +158,71 @@ STABLE_LIST.each(){|stable|
 		    end
         else
             puts "Skipping merge"
+            next
         end
-    end
-    if opts[:do_push] == true then
+    when :push
         puts `git push github #{local_branch}`
-    end
-
-    if opts[:submit_stable] == true then
+    when :push_stable
         remote_branch="stable-v#{stable}"
         remote_ref = "#{STABLE_REPO}/#{remote_branch}"
         rep = checkLog(local_branch, remote_ref, "submit")
         if rep == "y" then
-            puts `git push stable #{local_branch}:#{remote_branch}`
+            puts `git push #{STABLE_REPO} #{local_branch}:#{remote_branch}`
         else
             puts "Skipping submission"
+            next
+        end
+    when :release
+        prev_ver=`git show HEAD:CMakeLists.txt  | egrep "[sS][eE][tT]\\(PACKAGE_VERSION"`.
+                     chomp().gsub(/[sS][eE][tT]\(PACKAGE_VERSION\s*"([0-9.]*)".*$/, '\1')
+        ver_nums = prev_ver.split(".")
+        new_ver =  (ver_nums[0 .. -2] + [ver_nums[-1].to_i() + 1 ]).join(".")
+        git_prev_ver = "v" + (ver_nums[-1] == "0" ? ver_nums[0 .. -2].join(".") : prev_ver)
+
+        puts "Preparing release #{prev_ver} => #{new_ver}"
+        rep = checkLog(local_branch, git_prev_ver, "release")
+        if rep != "y" then
+            puts "Skipping submission"
+            next
         end
 
+        # Prepare tag message
+        tag_path=`mktemp`.chomp()
+        puts tag_path
+        tag_file = File.open(tag_path, "w+")
+        tag_file.puts "rdma-core-#{new_ver}:"
+        tag_file.puts ""
+        tag_file.puts "Updates from version #{prev_ver}"
+        tag_file.puts " * Backport fixes:"
+        tag_file.puts `git log HEAD ^#{git_prev_ver} --format='   * %s'`
+        tag_file.close()
+
+        # Update version number in relevant files
+        `sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]*/\\1#{new_ver}/g' redhat/rdma-core.spec suse/rdma-core.spec`
+        `sed -i -e 's/\\([sS][eE][tT](PACKAGE_VERSION[[:space:]]*"\\)[0-9.]*"/\\1#{new_ver}"/g' CMakeLists.txt`
+
+        `cat <<EOF > debian/changelog.new
+rdma-core ($VERNUM-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- $(git config user.name) <$(git config user.email)>  $(date '+%a, %d %b %Y %T %z')
+
+$(cat debian/changelog)
+EOF
+mv debian/changelog.new debian/changelog`
+         # Add and commit
+        puts `git add  redhat/rdma-core.spec suse/rdma-core.spec CMakeLists.txt debian/changelog`
+        puts `git commit -m "Bump to version #{new_ver}" --verbose --edit --signoff`
+        if $? != 0 then
+            raise("Failed to commit on branch #{local_branch}")
+        end
+        puts `git tag -a -s v#{new_ver} --edit -F #{tag_path}`
+        if $? != 0 then
+            raise("Failed to tag branch #{local_branch}")
+        end
+        `rm -f #{tag_path}`
+    else
+        raise "Unknown action #{opts[:action]}"
     end
 }
