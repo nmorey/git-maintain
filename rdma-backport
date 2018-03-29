@@ -151,9 +151,9 @@ STABLE_LIST.each(){|stable|
         system("git steal-commits")
     when :merge
         merge_branch = "dev/stable-v#{stable}/#{opts[:do_merge]}"
-        rep = checkLog(local_branch, merge_branch, "merge")
+        rep = checkLog(merge_branch, local_branch, "merge")
         if rep == "y" then
-            puts `git merge dev/stable-v#{stable}/#{opts[:do_merge]}`
+            puts `git merge #{merge_branch}`
             if $? != 0 then
                 puts "Merge failure. Starting bash for manual fixes. Exit shell to continue"
 			    `bash`
