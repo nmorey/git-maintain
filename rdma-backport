@@ -29,15 +29,16 @@ optsParser.banner = "Usage: #{__FILE__}  [-v <min_version>] [-c <SHA1> [-c <SHA1
 optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
-optsParser.on("-a", "--action <cp,merge,push,push_stable,release,submit_release>",\
-              [:cp, :merge, :push, :push_stable, :release, :submit_release],
-              "Search mode",
-              "cp: Backport commits and eventually push them to github",
-              "merge: Merge branch with suffix specified in -m <suff> into the main branch",
-              "push: Push branches to github for validation",
-              "push_stable: Push to stable repo",
-              "release: Create new release on all concerned branches",
-              "submit_release: Push the to stable and create the release packages",
+optsParser.on("-a", "--action <action>",
+              [:cp, :steal, :merge, :push, :push_stable, :release, :submit_release],
+              "Action to execute:",
+              "* cp: Backport commits and eventually push them to github",
+              "* steal: Steal commit from upstream that fixes commit in the branch or were tagged as stable",
+              "* merge: Merge branch with suffix specified in -m <suff> into the main branch",
+              "* push: Push branches to github for validation",
+              "* push_stable: Push to stable repo",
+              "* release: Create new release on all concerned branches",
+              "* submit_release: Push the to stable and create the release packages",
               "Default is cp") {
     |val| opts[:action] = val.to_sym()}
 
@@ -146,6 +147,8 @@ STABLE_LIST.each(){|stable|
                 puts "Continuing..."
 		    end
         end
+    when :steal
+        system("git steal-commits")
     when :merge
         merge_branch = "dev/stable-v#{stable}/#{opts[:do_merge]}"
         rep = checkLog(local_branch, merge_branch, "merge")
