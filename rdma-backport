@@ -21,6 +21,7 @@ opts = {
     :base_ver => 0,
     :commits => [],
     :do_merge => false,
+    :push_force => false,
     :br_suff => "master",
 }
 
@@ -50,6 +51,8 @@ optsParser.on("-b", "--branch-suffix <suffix>", "Branch suffix. Default is 'mast
     |val| opts[:br_suff] = val}
 optsParser.on("-m", "--merge <suffix>", "Merge branch with suffix.") {
     |val| opts[:do_merge] = val}
+optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
+    |val| opts[:push_force] = val}
 
 rest = optsParser.parse!(ARGV);
 raise("Extra Unexpected extra arguments provided: " + rest.map(){|x|"'" + x + "'"}.join(", ")) if rest.length != 0
@@ -164,7 +167,7 @@ STABLE_LIST.each(){|stable|
             next
         end
     when :push
-        puts `git push github #{local_branch}`
+        puts `git push #{opts[:push_force] == true ? "-f" : ""} github #{local_branch}`
     when :push_stable
         remote_branch="stable-v#{stable}"
         remote_ref = "#{STABLE_REPO}/#{remote_branch}"
