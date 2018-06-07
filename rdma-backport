@@ -31,7 +31,7 @@ optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
 optsParser.on("-a", "--action <action>",
-              [:cp, :steal, :merge, :push, :push_stable, :release, :submit_release],
+              [:cp, :steal, :merge, :push, :push_stable, :release, :submit_release, :reset],
               "Action to execute:",
               "* cp: Backport commits and eventually push them to github",
               "* steal: Steal commit from upstream that fixes commit in the branch or were tagged as stable",
@@ -40,6 +40,7 @@ optsParser.on("-a", "--action <action>",
               "* push_stable: Push to stable repo",
               "* release: Create new release on all concerned branches",
               "* submit_release: Push the to stable and create the release packages",
+              "* reset: Reset branch against upstream",
               "Default is cp") {
     |val| opts[:action] = val.to_sym()}
 
@@ -174,6 +175,16 @@ STABLE_LIST.each(){|stable|
         rep = checkLog(local_branch, remote_ref, "submit")
         if rep == "y" then
             puts `git push #{STABLE_REPO} #{local_branch}:#{remote_branch}`
+        else
+            puts "Skipping submission"
+            next
+        end
+    when :reset
+        remote_branch="stable-v#{stable}"
+        remote_ref = "#{STABLE_REPO}/#{remote_branch}"
+        rep = checkLog(local_branch, remote_ref, "reset")
+        if rep == "y" then
+            puts `git reset --hard #{remote_ref}`
         else
             puts "Skipping submission"
             next
