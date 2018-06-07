@@ -147,7 +147,7 @@ STABLE_LIST.each(){|stable|
             `git cherry-pick #{opts[:commits].join(" ")}`
             if $? != 0 then
                 puts "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
-			    `bash`
+			    system("bash")
                 puts "Continuing..."
 		    end
         end
