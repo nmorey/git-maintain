@@ -8,6 +8,7 @@ STABLE_REPO = "stable"
 def checkLog(br1, br2, action_msg)
     puts "Diff between #{br1} and #{br2}"
     puts `git shortlog #{br1} ^#{br2}`
+    return "n" if action_msg.to_s() == ""
     rep = 't'
     while rep != "y" && rep != "n" && rep != '' do
         puts "Do you wish to #{action_msg} this branch ? (y/N): "
@@ -30,11 +31,14 @@ optsParser.banner = "Usage: #{__FILE__}  [-v <min_version>] [-c <SHA1> [-c <SHA1
 optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
-optsParser.on("-a", "--action <action>",
-              [:cp, :steal, :merge, :push, :push_stable, :release, :submit_release, :reset],
+optsParser.on("-a", "--action=[ACTION]",
+              [:cp, :steal, :list, :merge, :push, :push_stable, :release, :submit_release, :reset,
+              # Internal commands for completion
+              :list_branches, :list_suffixes],
               "Action to execute:",
               "* cp: Backport commits and eventually push them to github",
               "* steal: Steal commit from upstream that fixes commit in the branch or were tagged as stable",
+              "* list: List commit present in the branch but not in the stable branch",
               "* merge: Merge branch with suffix specified in -m <suff> into the main branch",
               "* push: Push branches to github for validation",
               "* push_stable: Push to stable repo",
@@ -44,13 +48,13 @@ optsParser.on("-a", "--action <action>",
               "Default is cp") {
     |val| opts[:action] = val.to_sym()}
 
-optsParser.on("-v", "--base-version <[0-9]*>", Integer, "Older release to consider.") {
+optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
     |val| opts[:base_ver] = val}
-optsParser.on("-c", "--sha1 <sha1>", String, "Commit to cherry-pick. Can be used multiple time.") {
+optsParser.on("-c", "--sha1 [SHA1]", String, "Commit to cherry-pick. Can be used multiple time.") {
     |val| opts[:commits] << val}
-optsParser.on("-b", "--branch-suffix <suffix>", "Branch suffix. Default is 'master'.") {
+optsParser.on("-b", "--branch-suffix [SUFFIX]", "Branch suffix. Default is 'master'.") {
     |val| opts[:br_suff] = val}
-optsParser.on("-m", "--merge <suffix>", "Merge branch with suffix.") {
+optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
     |val| opts[:do_merge] = val}
 optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
     |val| opts[:push_force] = val}
@@ -68,11 +72,21 @@ if opts[:action] == :push_stable ||
 end
 
 STABLE_LIST=`git branch`.split("\n").map(){|x|
-    x=~ /dev\/stable-v[0-9][0-9]\/#{opts[:br_suff]}/ ?
-        x.gsub(/\*?\s*dev\/stable-v([0-9][0-9])\/#{opts[:br_suff]}\s*$/, '\1') :
-        nil}.compact()
+    x=~ /dev\/stable-v[0-9]+\/#{opts[:br_suff]}/ ?
+        x.gsub(/\*?\s*dev\/stable-v([0-9]+)\/#{opts[:br_suff]}\s*$/, '\1') :
+        nil}.compact().uniq()
 
-if opts[:action] == :submit_release then
+if opts[:action] == :list_branches then
+    puts STABLE_LIST.join("\n")
+    return 0
+elsif opts[:action] == :list_suffixes then
+    SUFFIX_LIST=`git branch`.split("\n").map(){|x|
+        x=~ /dev\/stable-v[0-9]+\/[a-zA-Z0-9_-]+/ ?
+            x.gsub(/\*?\s*dev\/stable-v[0-9]+\/([a-zA-Z0-9_-]+)\s*$/, '\1') :
+            nil}.compact().uniq()
+    puts SUFFIX_LIST.join("\n")
+    return 0
+elsif opts[:action] == :submit_release then
 
     remote_tags=`git ls-remote --tags #{STABLE_REPO} | egrep 'refs/tags/v[0-9.]*$'`.split("\n").map(){|x| x.gsub(/.*refs\/tags\//, '')}
     local_tags =`git tag -l | egrep '^v[0-9.]*$'`.split("\n")
@@ -153,6 +167,10 @@ STABLE_LIST.each(){|stable|
         end
     when :steal
         system("git steal-commits")
+    when :list
+        remote_branch="stable-v#{stable}"
+        remote_ref = "#{STABLE_REPO}/#{remote_branch}"
+        rep = checkLog(local_branch, remote_ref, nil)
     when :merge
         merge_branch = "dev/stable-v#{stable}/#{opts[:do_merge]}"
         rep = checkLog(merge_branch, local_branch, "merge")
