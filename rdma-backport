@@ -5,15 +5,19 @@ require 'optparse'
 VALID_REPO = "github"
 STABLE_REPO = "stable"
 
+def confirm(msg)
+    rep = 't'
+    while rep != "y" && rep != "n" && rep != '' do
+        puts "Do you wish to #{msg} ? (y/N): "
+        rep = STDIN.gets.chomp()
+    end
+    return rep
+end
 def checkLog(br1, br2, action_msg)
     puts "Diff between #{br1} and #{br2}"
     puts `git shortlog #{br1} ^#{br2}`
     return "n" if action_msg.to_s() == ""
-    rep = 't'
-    while rep != "y" && rep != "n" && rep != '' do
-        puts "Do you wish to #{action_msg} this branch ? (y/N): "
-        rep = STDIN.gets.chomp()
-    end
+    rep = confirm("#{action_msg} this branch")
     return rep
 end
 
