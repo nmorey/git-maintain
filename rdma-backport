@@ -138,9 +138,12 @@ optsParser.banner = "Usage: #{__FILE__}  [-v <min_version>] [-c <SHA1> [-c <SHA1
 optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
-optsParser.on("-a", "--action=[ACTION]",
-              [:cp, :steal, :list, :merge, :push, :push_stable, :release, :submit_release, :reset,
-              # Internal commands for completion
+optsParser.on("--action=[ACTION]",
+              [:cp, :steal, :list, :merge,
+               :push, :monitor,
+               :push_stable, :monitor_stable,
+               :release, :submit_release, :reset,
+               # Internal commands for completion
               :list_branches, :list_suffixes],
               "Action to execute:",
               "* cp: Backport commits and eventually push them to github",
@@ -148,7 +151,9 @@ optsParser.on("-a", "--action=[ACTION]",
               "* list: List commit present in the branch but not in the stable branch",
               "* merge: Merge branch with suffix specified in -m <suff> into the main branch",
               "* push: Push branches to github for validation",
+              "* monitor: Check the travis state of all branches",
               "* push_stable: Push to stable repo",
+              "* monitor_stable: Check the travis state of all stable branches",
               "* release: Create new release on all concerned branches",
               "* submit_release: Push the to stable and create the release packages",
               "* reset: Reset branch against upstream",
@@ -302,6 +307,26 @@ STABLE_LIST.each(){|stable|
         end
     when :push
         puts `git push #{opts[:push_force] == true ? "-f" : ""} github #{local_branch}`
+    when :monitor
+        st = travis.getValidState(head)
+        puts "Status for v#{stable}: " + st
+        if st == "failed"
+            rep = "y"
+            suff=""
+            while rep == "y"
+                rep = confirm("see the build log#{suff}")
+                if rep == "y" then
+                    log = travis.getValidLog(head)
+                    tmp = `mktemp`.chomp()
+                    tmpfile = File.open(tmp, "w+")
+                    tmpfile.puts(log)
+                    tmpfile.close()
+                    system("less -r #{tmp}")
+                    `rm -f #{tmp}`
+                end
+                suff=" again"
+            end
+        end
     when :push_stable
         rep = checkLog(local_branch, remote_ref, "submit")
         if rep == "y" then
@@ -310,6 +335,9 @@ STABLE_LIST.each(){|stable|
             puts "Skipping submission"
             next
         end
+    when :monitor_stable
+        stable_head=`git rev-parse #{remote_ref}`.chomp()
+        puts "Status for v#{stable}: " + travis.getStableState(stable_head)
     when :reset
         rep = checkLog(local_branch, remote_ref, "reset")
         if rep == "y" then
