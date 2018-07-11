@@ -144,7 +144,7 @@ elsif opts[:action] == :submit_release then
     if rep != 'y' then
         raise "Aborting.."
     end
-    puts `git-release.ruby2.1`
+    puts `/usr/bin/git-release.ruby2.5`
     exit 0
 end
 
