@@ -166,6 +166,10 @@ STABLE_LIST.each(){|stable|
         exit 1
     end
 
+    head=`git rev-parse HEAD`.chomp()
+    remote_branch="stable-v#{stable}"
+    remote_ref = "#{STABLE_REPO}/#{remote_branch}"
+
     case opts[:action]
     when :cp
         if opts[:commits].length > 0 then
@@ -179,8 +183,6 @@ STABLE_LIST.each(){|stable|
     when :steal
         system("git steal-commits")
     when :list
-        remote_branch="stable-v#{stable}"
-        remote_ref = "#{STABLE_REPO}/#{remote_branch}"
         rep = checkLog(local_branch, remote_ref, nil)
     when :merge
         merge_branch = "dev/stable-v#{stable}/#{opts[:do_merge]}"
@@ -199,8 +201,6 @@ STABLE_LIST.each(){|stable|
     when :push
         puts `git push #{opts[:push_force] == true ? "-f" : ""} github #{local_branch}`
     when :push_stable
-        remote_branch="stable-v#{stable}"
-        remote_ref = "#{STABLE_REPO}/#{remote_branch}"
         rep = checkLog(local_branch, remote_ref, "submit")
         if rep == "y" then
             puts `git push #{STABLE_REPO} #{local_branch}:#{remote_branch}`
@@ -209,8 +209,6 @@ STABLE_LIST.each(){|stable|
             next
         end
     when :reset
-        remote_branch="stable-v#{stable}"
-        remote_ref = "#{STABLE_REPO}/#{remote_branch}"
         rep = checkLog(local_branch, remote_ref, "reset")
         if rep == "y" then
             puts `git reset --hard #{remote_ref}`
