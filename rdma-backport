@@ -160,7 +160,7 @@ STABLE_LIST.each(){|stable|
     local_branch = "dev/stable-v#{stable}/#{opts[:br_suff]}"
 
     puts "Backporting for v#{stable}"
-    puts `git checkout #{local_branch}`
+    print `git checkout -q #{local_branch}`.chomp()
     if $? != 0 then
         raise "Error: Failed to checkout the branch"
         exit 1
