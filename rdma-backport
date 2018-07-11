@@ -328,6 +328,10 @@ STABLE_LIST.each(){|stable|
             end
         end
     when :push_stable
+        if travis.checkValidState(head) != true then
+            puts "Build is not passed on travis. Skipping submission"
+            next
+        end
         rep = checkLog(local_branch, remote_ref, "submit")
         if rep == "y" then
             puts `git push #{STABLE_REPO} #{local_branch}:#{remote_branch}`
