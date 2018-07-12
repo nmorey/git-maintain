@@ -94,29 +94,40 @@ This will allow 'steal-stable-commits' to figure out what should be backported i
 
 Watch the mailing-lists (and/or github and/or the upstream branches) for patches that are tagged for maintainance.
 Apply them to the appropriate branches
+
 ```git maintain cp -s deadbeef --version '1[789]'```
 
 And push them to my own github repo so that Travis will check everything out
+
 ```git maintain push --version '1[789]'```
 
 Some time later, check their status
+
 ```git maintain monitor --version '1[789]'```
 
 If everything looks good, push to the stable repo
+
 ```git maintain push_stable --version '1[789]'```
 
-If patches have been sent to the ML but are not yet accepted, I usually try them out on a "pending" branch.```git maintain cp -s deadbeef --version '1[789]' -b pending```
+If patches have been sent to the ML but are not yet accepted, I usually try them out on a "pending" branch.
+
+```git maintain cp -s deadbeef --version '1[789]' -b pending```
 Note that it is your own job to create the branches (yet!)
 
 Push it to my own github too.
+
 ```git maintain push --version '1[789]' -b pending```
 
 Once this gets accepted (and Travis is OK too), I merge this branch back to my 'master'
+
 ```git maintain merge --version '1[789]' -m pending```
+
 The default -b option here is master so it is not required to specify it. Also branch suffixed with something else than master cannot be pushed to stable branches for safety reasons.
 
 If this is all broken and the patch should not be applied, I simply reset my branch
+
 ```git maintain reset --version '1[789]' -m pending```
+
 Note: This has been made as safe as possible and is querying you before doing anything destructive.
 
 * Releases
@@ -126,6 +137,7 @@ Once some work has been done, it is time for a new release.
 First, unless you're working for the rdma-core repo, you'll need to add your own 'add-on' class to do automatize tyour release process. Please look at 'addons/RDMACore.rb' for an example.
 
 Then all you need to do is create your release(s)
+
 ```git maintain release --version '1[789]'```
 
 This will run your addon code. What you usually want to do in there is create a tag and eventually bump version numbers, add releases notes, etc.
@@ -133,13 +145,16 @@ This will run your addon code. What you usually want to do in there is create a 
 I strongly advise here to then use the 'push_stable' command. It will update the branches, but NOT push the tag.
 This emans that if something has been broken by the release commit (if any), there is still time to fix it.
 The tag will not have been propagated anywhere else and can be deleted manually.
+
 ```git maintain push_stable --version '1[789]'```
 
 You can then monitor the status on Travis
+
 ```git maintain monitor_stable --version '1[789]'```
 
 
 Once everything is green, it is time to submit your release
+
 ```git maintain submit_release --version '1[789]'```
 
 This will submit the all pending tags to github, and prepare an email for the project mailing list (requires the 'patch.target' option from git-topic-branches)
