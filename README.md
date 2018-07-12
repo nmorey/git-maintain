@@ -2,9 +2,9 @@ git-maintain is a single ruby script to deal with all the hassle of maintaining 
 
 The idea is to script mos tof the maintenance tasks so the maintainer can focus on just reviweing and not on writing up release notes and such.
 
-Note: the workflow is highly tied to the git-topic-branches (https://github.com/nmorey/git-topic-branches).
+- Note: the workflow is highly tied to the git-topic-branches (https://github.com/nmorey/git-topic-branches).
 To use the 'steal' command it will be required.
-Note2: Releasing on github is done through the git-release (https://github.com/mpalmer/github-release)
+- Note2: Releasing on github is done through the git-release (https://github.com/mpalmer/github-release)
 
 # Command summary
 
@@ -22,22 +22,22 @@ Note2: Releasing on github is done through the git-release (https://github.com/m
 
 # Configuration
 
-* Basic shell setup
+## Basic shell setup
 - git-maintain should be in your path
 - Load git-maintain-completion.sh for shell completion
 
-* Remote setup
+## Remote setup
 - the 'github' remote should be your own WIP github to test out branches before submitting to the official repo
 - the 'origin' remote should be the official repo in read-only mode to avoid any accidental pushes
 - the 'stable' remote should be the official repo in RW mode
 
-* Stealing commits
+## Stealing commits
 
 The steal feature uses git-topic-branches (which shamelessly copied it from git://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git.
 
 It requires the 'git steal-commits' command to work which should point to the 'stable-steal-commits' script from git-topic-branches
 
-* Making releases
+## Making releases
 The release process being very specific to each project, the release command does nothing by default.
 However the behaviour can be overriden for specific repo (detected by repo name)
 
@@ -112,6 +112,7 @@ If everything looks good, push to the stable repo
 If patches have been sent to the ML but are not yet accepted, I usually try them out on a "pending" branch.
 
 ```git maintain cp -s deadbeef --version '1[789]' -b pending```
+
 Note that it is your own job to create the branches (yet!)
 
 Push it to my own github too.
