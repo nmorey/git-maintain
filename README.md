@@ -33,7 +33,7 @@ To use the 'steal' command it will be required.
 
 ## Stealing commits
 
-The steal feature uses git-topic-branches (which shamelessly copied it from git://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git.
+The steal feature uses git-topic-branches (which shamelessly copied it from https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/
 
 It requires the 'git steal-commits' command to work which should point to the 'stable-steal-commits' script from git-topic-branches
 
@@ -130,6 +130,36 @@ If this is all broken and the patch should not be applied, I simply reset my bra
 ```git maintain reset --version '1[789]' -m pending```
 
 Note: This has been made as safe as possible and is querying you before doing anything destructive.
+
+## Stealing commits
+
+This uses the git-topic-branches 'steal-stable-commits' script originally available here https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/
+
+It allows to automatically cherry-pick commits that have been marked as fixing a bug in your branch.
+
+What it does is parse the master branch for commits that contains the standard
+
+```Fixes: deadbeef00 ("broken commit msg")```
+
+It will then check if the broken commit is in your branch (and not already fixed). It will then prompt you for reviewing the fix and apply it on your local stable branch.
+
+If the developers from your project follow this, it removes a lot of the hassle of finding which patch applies to which branches, It will do it for you !
+
+You can get more infos on how all this works here: https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/README (stable steal-commits section).
+Note that this was slightly change to better fit the git-topic-branches usecase
+
+One of the added feature is the ability to blacklist a commit for certain branch.
+(Useful when there is a commit broken in your stable branch but the fix breaks the ABI or simply won't apply.)
+
+Blacklisting the fix (for a specific branch) will prevent it from ever popping up when stealing commits.
+Blacklisting is done through git-notes. It attaches a note to the "fix" commit in master and simply add the name of the branch it is blacklisted in. To run-blacklist the commit, edit the note and remove the branch name.
+
+Note that blacklisted commites will show an info message when skipped so you don't have to dig through all the notes to find which one you wanted.
+
+To run the "auto steal", simply run:
+
+```git maintain steal```
+
 
 ## Releases
 
