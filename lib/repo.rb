@@ -13,6 +13,18 @@ module Backport
             "* submit_release: Push the to stable and create the release packages",
         ]
 
+        def self.load(path=".")
+            dir = Dir.pwd()
+            repo_name = File.basename(dir)
+            custom = Backport::getCustom(repo_name)
+            if custom != nil then
+                puts "# Detected custom classes for repo '#{repo_name}"
+                return custom[:repo].new(dir)
+            else
+                return Repo.new(dir)
+            end
+        end
+
         def self.check_opts(opts)
             if opts[:action] == :submit_release then
                 if opts[:br_suff] != "master" then
@@ -22,7 +34,7 @@ module Backport
         end
 
         def self.execAction(opts, action)
-            repo   = Repo.new()
+            repo   = Repo::loadRepo()
 
             if action == :submit_release then
                 repo.stableUpdate()

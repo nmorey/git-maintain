@@ -1,4 +1,5 @@
-$LOAD_PATH.push(File.dirname(__FILE__))
+BACKPORT_LIB_DIR = File.dirname(__FILE__)
+$LOAD_PATH.push(BACKPORT_LIB_DIR)
 
 require 'travis'
 require 'repo'
@@ -6,6 +7,18 @@ require 'branch'
 
 module Backport
     ACTION_CLASS = [ Branch, Repo ]
+    @@custom_classes = {}
+
+    def registerCustom(repo_name, repoClass, branchClass)
+        raise("Multiple class for repo #{repo_name}") if @@custom_classes[repo_name] != nil
+        @@custom_classes[repo_name] = { :repo => repoClass, :branch => branchClass }
+    end
+    module_function :registerCustom
+
+    def getCustom(repo_name)
+        return @@custom_classes[repo_name]
+    end
+    module_function :getCustom
 
     def getActionAttr(attr)
         return ACTION_CLASS.map(){|x| x.const_get(attr)}.flatten()
@@ -51,5 +64,15 @@ module Backport
         return rep
     end
     module_function :checkLog
+
 end
+$LOAD_PATH.pop()
+
+
+# Load all custom classes
+$LOAD_PATH.push(BACKPORT_LIB_DIR + "/addons/")
+Dir.entries(BACKPORT_LIB_DIR + "/addons/").each(){|entry|
+    next if (!File.file?(BACKPORT_LIB_DIR + "/addons/" + entry) || entry !~ /\.rb$/ );
+    require entry.sub(/.rb$/, "")
+}
 $LOAD_PATH.pop()
