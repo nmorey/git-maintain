@@ -1,4 +1,4 @@
-module Backport
+module GitMaintain
     class RDMACoreBranch < Branch
         REPO_NAME = "rdma-core"
 
@@ -10,7 +10,7 @@ module Backport
             git_prev_ver = "v" + (ver_nums[-1] == "0" ? ver_nums[0 .. -2].join(".") : prev_ver)
 
             puts "Preparing release #{prev_ver} => #{new_ver}"
-            rep = Backport::checkLog(opts, @local_branch, git_prev_ver, "release")
+            rep = GitMaintain::checkLog(opts, @local_branch, git_prev_ver, "release")
             if rep != "y" then
                 puts "Skipping release"
                 return
@@ -56,5 +56,5 @@ mv debian/changelog.new debian/changelog")
         end
     end
 
-    Backport::registerCustom(RDMACoreBranch::REPO_NAME, Backport::Repo, RDMACoreBranch)
+    GitMaintain::registerCustom(RDMACoreBranch::REPO_NAME, GitMaintain::Repo, RDMACoreBranch)
 end

@@ -5,12 +5,12 @@ require 'travis'
 require 'repo'
 require 'branch'
 
-module Backport
+module GitMaintain
     class Common
         ACTION_LIST = [ :list_actions ]
         ACTION_HELP = []
         def self.execAction(opts, action)
-            puts Backport::getActionAttr("ACTION_LIST").join("\n")
+            puts GitMaintain::getActionAttr("ACTION_LIST").join("\n")
         end
     end
 

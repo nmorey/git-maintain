@@ -1,4 +1,4 @@
-module Backport
+module GitMaintain
     class TravisChecker
         TRAVIS_URL='https://api.travis-ci.org/'
 

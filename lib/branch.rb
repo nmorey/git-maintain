@@ -1,4 +1,4 @@
-module Backport
+module GitMaintain
     class Branch
         ACTION_LIST = [
             :cp, :steal, :list, :merge,
@@ -27,7 +27,7 @@ module Backport
 
         def self.load(repo, version, travis, branch_suff)
             repo_name = File.basename(repo.path)
-            custom = Backport::getCustom(repo_name)
+            custom = GitMaintain::getCustom(repo_name)
             if custom != nil then
                 return custom[:branch].new(repo, version, travis, branch_suff)
             else
@@ -154,13 +154,13 @@ module Backport
 
         # List commits in the branch that are no in the stable branch
         def list(opts)
-         Backport::checkLog(opts, @local_branch, @remote_ref, nil)
+         GitMaintain::checkLog(opts, @local_branch, @remote_ref, nil)
         end
 
         # Merge merge_branch into this one
         def merge(opts)
             merge_branch = "dev/stable-v#{@version}/#{opts[:do_merge]}"
-            rep = Backport::checkLog(opts, merge_branch, @local_branch, "merge")
+            rep = GitMaintain::checkLog(opts, merge_branch, @local_branch, "merge")
             if rep == "y" then
                 @repo.runGit("merge #{merge_branch}")
                 if $? != 0 then
@@ -187,7 +187,7 @@ module Backport
                 rep = "y"
                 suff=""
                 while rep == "y"
-                    rep = Backport::confirm(opts, "see the build log#{suff}")
+                    rep = GitMaintain::confirm(opts, "see the build log#{suff}")
                     if rep == "y" then
                         log = @travis.getValidLog(head)
                         tmp = `mktemp`.chomp()
@@ -208,7 +208,7 @@ module Backport
                 puts "Build is not passed on travis. Skipping push to stable"
                 return
             end
-            rep = Backport::checkLog(opts, @local_branch, @remote_ref, "submit")
+            rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "submit")
             if rep == "y" then
                 @repo.runGit("push #{Repo::STABLE_REPO} #{@local_branch}:#{@remote_branch}")
             else
@@ -224,7 +224,7 @@ module Backport
 
         # Reset the branch to the upstream stable one
         def reset(opts)
-            rep = Backport::checkLog(opts @local_branch, @remote_ref, "reset")
+            rep = GitMaintain::checkLog(opts @local_branch, @remote_ref, "reset")
             if rep == "y" then
                 @repo.runGit("reset --hard #{@remote_ref}")
             else

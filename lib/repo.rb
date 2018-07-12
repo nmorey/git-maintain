@@ -1,4 +1,4 @@
-module Backport
+module GitMaintain
     class Repo
         VALID_REPO = "github"
         STABLE_REPO = "stable"
@@ -16,7 +16,7 @@ module Backport
         def self.load(path=".")
             dir = Dir.pwd()
             repo_name = File.basename(dir)
-            custom = Backport::getCustom(repo_name)
+            custom = GitMaintain::getCustom(repo_name)
             if custom != nil then
                 puts "# Detected custom classes for repo '#{repo_name}'" if ENV['DEBUG'] == 1
                 return custom[:repo].new(dir)
@@ -117,7 +117,7 @@ module Backport
             end
 
             puts "This will officially release these tags: #{new_tags.join(", ")}"
-            rep = Backport::confirm("release them")
+            rep = GitMaintain::confirm("release them")
             if rep != 'y' then
                 raise "Aborting.."
             end
@@ -149,7 +149,7 @@ module Backport
             puts runGitImap("< #{mail_path}; rm -f #{mail_path}")
 
             puts "Last chance to cancel before submitting"
-            rep= Backport::confirm("submit these releases")
+            rep= GitMaintain::confirm("submit these releases")
             if rep != 'y' then
                 raise "Aborting.."
             end
