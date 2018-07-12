@@ -47,7 +47,7 @@ In this case, the release command bump the version in all the appropriate files 
 
 # How do I use it
 
-* Branch setup
+## Branch setup
 As said, this uses the branching schemes used by git-topic-branches.
 
 A non compulsory recommendation is to create
@@ -90,7 +90,7 @@ stable-base.dev---stable-v15 v15
 ```
 This will allow 'steal-stable-commits' to figure out what should be backported in the stable branches.
 
-* Day-to-day workflow
+## Day-to-day workflow
 
 Watch the mailing-lists (and/or github and/or the upstream branches) for patches that are tagged for maintainance.
 Apply them to the appropriate branches
@@ -131,7 +131,7 @@ If this is all broken and the patch should not be applied, I simply reset my bra
 
 Note: This has been made as safe as possible and is querying you before doing anything destructive.
 
-* Releases
+## Releases
 
 Once some work has been done, it is time for a new release.
 
@@ -144,7 +144,8 @@ Then all you need to do is create your release(s)
 This will run your addon code. What you usually want to do in there is create a tag and eventually bump version numbers, add releases notes, etc.
 
 I strongly advise here to then use the 'push_stable' command. It will update the branches, but NOT push the tag.
-This emans that if something has been broken by the release commit (if any), there is still time to fix it.
+This means that if something has been broken by the release commit (if any), there is still time to fix it.
+
 The tag will not have been propagated anywhere else and can be deleted manually.
 
 ```git maintain push_stable --version '1[789]'```
