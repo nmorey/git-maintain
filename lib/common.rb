@@ -6,7 +6,15 @@ require 'repo'
 require 'branch'
 
 module Backport
-    ACTION_CLASS = [ Branch, Repo ]
+    class Common
+        ACTION_LIST = [ :list_actions ]
+        ACTION_HELP = []
+        def self.execAction(opts, action)
+            puts Backport::getActionAttr("ACTION_LIST").join("\n")
+        end
+    end
+
+    ACTION_CLASS = [ Common, Branch, Repo ]
     @@custom_classes = {}
 
     def registerCustom(repo_name, repoClass, branchClass)
