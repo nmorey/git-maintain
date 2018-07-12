@@ -35,6 +35,34 @@ module Backport
             end
         end
 
+        def self.set_opts(action, optsParser, opts)
+            opts[:base_ver] = 0
+            opts[:version] = /.*/
+            opts[:commits] = []
+            opts[:do_merge] = false
+            opts[:push_force] = false
+
+            optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
+                |val| opts[:base_ver] = val}
+            optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
+                |val| opts[:version] = val}
+
+            case action
+            when :cp
+                optsParser.banner += "-c <sha1> [-c <sha1> ...]"
+                optsParser.on("-c", "--sha1 [SHA1]", String, "Commit to cherry-pick. Can be used multiple time.") {
+                    |val| opts[:commits] << val}
+            when :merge
+                optsParser.banner += "-m <suffix>"
+                optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
+                    |val| opts[:do_merge] = val}
+            when :push
+                optsParser.banner += "[-f]"
+                optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
+                    |val| opts[:push_force] = val}
+            end
+        end
+
         def self.check_opts(opts)
             if opts[:action] == :push_stable ||
                opts[:action] == :release then

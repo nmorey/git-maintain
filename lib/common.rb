@@ -25,6 +25,16 @@ module Backport
     end
     module_function :getActionAttr
 
+    def setOpts(action, optsParser, opts)
+         ACTION_CLASS.each(){|x|
+            next if x::ACTION_LIST.index(action) == nil
+            next if x.singleton_methods().index(:set_opts) == nil
+            x.set_opts(action, optsParser, opts)
+            break
+        }
+    end
+    module_function :setOpts
+
     def checkOpts(opts)
         ACTION_CLASS.each(){|x|
             next if x.singleton_methods().index(:check_opts) == nil

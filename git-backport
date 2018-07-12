@@ -7,44 +7,44 @@ require 'json'
 require 'common'
 
 opts = {
-    :action => :cp,
-    :base_ver => 0,
-    :version => /.*/,
-    :commits => [],
-    :do_merge => false,
-    :push_force => false,
     :br_suff => "master",
     :no => false,
 }
 
+actionParser = OptionParser.new(nil, 60)
+actionParser.banner = "Usage: #{__FILE__} <action> [action options]"
+actionParser.separator ""
+actionParser.separator "Options:"
+actionParser.on("-h", "--help", "Display usage.") { |val| puts actionParser.to_s; exit 0 }
+actionParser.separator "Possible actions:"
+Backport::getActionAttr("ACTION_HELP").each(){|x|
+    actionParser.separator "\t " + x
+}
+rest = actionParser.order!(ARGV);
+if rest.length < 0 then
+    STDERR.puts("Error: No action provided")
+    puts actionParser.to_s()
+    exit 1
+end
+
+action_s = ARGV[0]
+action = action_s.to_sym()
+raise("Invalid action '#{action_s}'") if Backport::getActionAttr("ACTION_LIST").index(action) == nil
+opts[:action] = action
+ARGV.shift()
+
 optsParser = OptionParser.new(nil, 60)
-optsParser.banner = "Usage: #{__FILE__}  [-v <min_version>] [-c <SHA1> [-c <SHA1> [...]]]"
+optsParser.banner = "Usage: #{__FILE__} #{action_s} "
 optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
-optsParser.on("--action=[ACTION]",
-              Backport::getActionAttr("ACTION_LIST"),
-              *([ "Action to execute:" ] +
-              Backport::getActionAttr("ACTION_HELP")+
-              [ "Default is cp" ])) {
-    |val| opts[:action] = val.to_sym()}
-
-optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
-    |val| opts[:base_ver] = val}
-optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
-    |val| opts[:version] = val}
-optsParser.on("-c", "--sha1 [SHA1]", String, "Commit to cherry-pick. Can be used multiple time.") {
-    |val| opts[:commits] << val}
 optsParser.on("-b", "--branch-suffix [SUFFIX]", "Branch suffix. Default is 'master'.") {
     |val| opts[:br_suff] = val}
-optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
-    |val| opts[:do_merge] = val}
-optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
-    |val| opts[:push_force] = val}
 optsParser.on("-n", "--no", "Assume no to all questions.") {
     |val| opts[:no] = true}
+Backport::setOpts(action, optsParser, opts)
 
-rest = optsParser.parse!(ARGV);
+rest = optsParser.order!(ARGV);
 raise("Extra Unexpected extra arguments provided: " + rest.map(){|x|"'" + x + "'"}.join(", ")) if rest.length != 0
 
 Backport::checkOpts(opts)
