@@ -41,6 +41,7 @@ module GitMaintain
             opts[:commits] = []
             opts[:do_merge] = false
             opts[:push_force] = false
+            opts[:no_travis] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
@@ -60,6 +61,10 @@ module GitMaintain
                 optsParser.banner += "[-f]"
                 optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
                     |val| opts[:push_force] = val}
+            when :push_stable
+                optsParser.banner += "[-T]"
+                optsParser.on("-T", "--no-travis", "Ignore Travis build status and push anyway.") {
+                    |val| opts[:no_travis] = val}
             end
         end
 
@@ -204,7 +209,8 @@ module GitMaintain
 
         # Push branch to the stable repo
         def push_stable(opts)
-            if @travis.checkValidState(@head) != true then
+            if opts[:no_travis] != true &&
+               @travis.checkValidState(@head) != true then
                 puts "Build is not passed on travis. Skipping push to stable"
                 return
             end
