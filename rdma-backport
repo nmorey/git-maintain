@@ -20,13 +20,19 @@ $opts = {
     :do_merge => false,
     :push_force => false,
     :br_suff => "master",
+    :no => false,
 }
 
 def confirm(msg)
     rep = 't'
     while rep != "y" && rep != "n" && rep != '' do
         puts "Do you wish to #{msg} ? (y/N): "
-        rep = STDIN.gets.chomp()
+        if $opts[:no] == true then
+            puts "Auto-replying bo due to --no option"
+            rep = 'n'
+        else
+            rep = STDIN.gets.chomp()
+        end
     end
     return rep
 end
@@ -170,6 +176,8 @@ optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
     |val| $opts[:do_merge] = val}
 optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
     |val| $opts[:push_force] = val}
+optsParser.on("-n", "--no", "Assume no to all questions.") {
+    |val| $opts[:no] = true}
 
 rest = optsParser.parse!(ARGV);
 raise("Extra Unexpected extra arguments provided: " + rest.map(){|x|"'" + x + "'"}.join(", ")) if rest.length != 0
