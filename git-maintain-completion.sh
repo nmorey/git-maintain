@@ -14,90 +14,86 @@ _git_maintain_genoptlist(){
 		${_GIT_MAINTAIN_CMD_SORT} -u
 }
 _complete_git_maintain_branch(){
-	local LAST=$1
-	local cur=$2
-	shift 2
-	case $LAST in
+	case $prev in
 		-b|--branch-suffix)
-			SUFFIXES=$($cmd list_suffixes)
-			compgen -W "$SUFFIXES" -- "$cur"
+			__gitcomp_nl "$(git maintain list_suffixes)"
 			;;
 		-v|--base-version)
-			BRANCHES=$(cmd list_branches)
-			compgen -W "$BRANCHES" -- "$cur"
+			BRANCHES=
+			__gitcomp_nl "$(git maintain list_branches)"
 			;;
-		*)
-			echo $*
 	esac
 }
 
-_complete_git_maintain_cp()
+_git_maintain_cp()
 {
-   local cur
-   local last
-   local OPT_LIST=$(_git_maintain_genoptlist $cmd cp)
-    _get_comp_words_by_ref cur
+   local OPT_LIST=$(_git_maintain_genoptlist git maintain cp)
 
-    last=$((--COMP_CWORD))
-    case "${COMP_WORDS[last]}" in
+    case "$prev" in
 		-c|--sha1);;
 		*)
-	        COMPREPLY=( $(_complete_git_maintain_branch "${COMP_WORDS[last]}" "$cur" \
-													$(compgen -W "$OPT_LIST" -- "$cur")) )
+			__gitcomp_nl "$OPT_LIST"
+	        _complete_git_maintain_branch
 			;;
 	esac;
 }
 
-_complete_git_maintain_merge()
+_git_maintain_merge()
 {
-   local cur
-   local last
-   local OPT_LIST=$(_git_maintain_genoptlist $cmd merge)
+   local OPT_LIST=$(_git_maintain_genoptlist git maintain merge)
     _get_comp_words_by_ref cur
 
-    last=$((--COMP_CWORD))
-    case "${COMP_WORDS[last]}" in
+    case "$prev" in
 		-m|--merge)
-			SUFFIXES=$($cmd list_suffixes)
-			COMPREPLY=( $( compgen -W "$SUFFIXES" -- "$cur"))
+			__gitcomp_nl "$(git maintain list_suffixes)"
 			;;
 		*)
-	        COMPREPLY=( $(_complete_git_maintain_branch "${COMP_WORDS[last]}" "$cur" \
-													$(compgen -W "$OPT_LIST" -- "$cur")) )
+			__gitcomp_nl "$OPT_LIST"
+	        _complete_git_maintain_branch
 			;;
 	esac;
 }
 
-_complete_git_maintain(){
-    local cur
-    local last
-	local cmd=$1
-	local OPT_LIST
-	local CMD_LIST=$($1 list_actions | grep -v list_actions)
+_git_maintain(){
+	local direct_call=${1:-1}
+	local cmd_word=$(expr $direct_call + 1)
 
-    _get_comp_words_by_ref cur
-    last=$((COMP_CWORD - 1))
-	if [ $last -eq 0 ]; then 
-		case "${COMP_WORDS[1]}" in
+	__git_has_doubledash && return
+
+	_get_comp_words_by_ref cur
+	_get_comp_words_by_ref prev
+	_get_comp_words_by_ref cword
+
+
+	if [ $cword -eq $cmd_word ]; then
+		case "$cur" in
 			-*)
-				OPT_LIST=$(_git_maintain_genoptlist $cmd)
-				COMPREPLY=( $( compgen -W "$OPT_LIST" -- "$cur") );;
+				__gitcomp_nl "$(_git_maintain_genoptlist git maintain)"
+				return
+				;;
 			*)
-	            COMPREPLY=( $( compgen -W "$CMD_LIST" -- "$cur") );;
-		esac;
+				__gitcomp_nl "$(git maintain list_actions | grep -v list_actions)"
+				return
+				;;
+		esac
     else
-		local cmd_name=${COMP_WORDS[1]}
-		completion_func="_complete_git_maintain_${cmd_name}"
+		_get_comp_words_by_ref words
+		local cmd_name=${words[$cmd_word]}
+		completion_func="_git_maintain_${cmd_name}"
 		declare -f $completion_func > /dev/null
 		 if [ $? -eq 0 ]; then
 			 $completion_func
 		 else
-			 OPT_LIST=$(_git_maintain_genoptlist $cmd $cmd_name)
-			 case "${COMP_WORDS[last]}" in
+			 OPT_LIST=$(_git_maintain_genoptlist git maintain $cmd_name)
+			 case "$prev" in
 				 *)
-					 COMPREPLY=( $(compgen -W "$OPT_LIST" -- "$cur") );;
+					__gitcomp_nl "$OPT_LIST"
 			 esac
 		 fi
 	fi
 
-} && complete -F _complete_git_maintain git-maintain
+}
+
+__git_maintain(){
+	_git_maintain 0
+} && complete -F __git_maintain git-maintain
