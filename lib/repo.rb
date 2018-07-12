@@ -18,7 +18,7 @@ module Backport
             repo_name = File.basename(dir)
             custom = Backport::getCustom(repo_name)
             if custom != nil then
-                puts "# Detected custom classes for repo '#{repo_name}"
+                puts "# Detected custom classes for repo '#{repo_name}'" if ENV['DEBUG'] == 1
                 return custom[:repo].new(dir)
             else
                 return Repo.new(dir)
