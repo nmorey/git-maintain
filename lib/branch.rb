@@ -224,7 +224,7 @@ module GitMaintain
 
         # Reset the branch to the upstream stable one
         def reset(opts)
-            rep = GitMaintain::checkLog(opts @local_branch, @remote_ref, "reset")
+            rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "reset")
             if rep == "y" then
                 @repo.runGit("reset --hard #{@remote_ref}")
             else
