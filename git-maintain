@@ -21,7 +21,7 @@ GitMaintain::getActionAttr("ACTION_HELP").each(){|x|
     actionParser.separator "\t " + x
 }
 rest = actionParser.order!(ARGV);
-if rest.length < 0 then
+if rest.length <= 0 then
     STDERR.puts("Error: No action provided")
     puts actionParser.to_s()
     exit 1
