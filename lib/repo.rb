@@ -34,7 +34,7 @@ module Backport
         end
 
         def self.execAction(opts, action)
-            repo   = Repo::loadRepo()
+            repo   = Repo::load()
 
             if action == :submit_release then
                 repo.stableUpdate()
