@@ -84,16 +84,16 @@ module GitMaintain
                 branch = Branch::load(repo, br, travis, opts[:br_suff])
                 case branch.is_targetted?(opts)
                 when :too_old
-                    puts "Skipping older v#{branch.version}"
+                    puts "# Skipping older v#{branch.version}"
                     next
                 when :no_match
-                    puts "Skipping v#{branch.version} not matching #{opts[:version].to_s()}"
+                    puts "# Skipping v#{branch.version} not matching #{opts[:version].to_s()}"
                     next
                 end
 
-                puts "############################"
-                puts "Working on v#{branch.version}"
-                puts "############################"
+                puts "###############################"
+                puts "# Working on v#{branch.version}"
+                puts "###############################"
 
                 if NO_CHECKOUT_ACTIONS.index(action) == nil  then
                     branch.checkout()

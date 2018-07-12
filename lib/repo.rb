@@ -78,7 +78,7 @@ module GitMaintain
         end
 
         def stableUpdate()
-            puts "#Fetching stable updates..."
+            puts "# Fetching stable updates..."
             runGit("fetch #{STABLE_REPO}")
         end
         def getStableList(br_suff)
