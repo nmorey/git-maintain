@@ -3,6 +3,7 @@
 ------------------
 
 * Fix path to git-release (assume it is properly installed)
+* Fix release date handling in CHANGELOG
 
 ------------------
 0.2.1 (2018-07-13)
