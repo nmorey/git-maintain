@@ -90,7 +90,7 @@ module GitMaintain
         while rep != "y" && rep != "n" && rep != '' do
             puts "Do you wish to #{msg} ? (y/N): "
             if opts[:no] == true then
-                puts "Auto-replying bo due to --no option"
+                puts "Auto-replying no due to --no option"
                 rep = 'n'
             else
                 rep = STDIN.gets.chomp()
