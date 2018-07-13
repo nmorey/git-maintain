@@ -2,7 +2,7 @@ module GitMaintain
     class Repo
         VALID_REPO = "github"
         STABLE_REPO = "stable"
-        SUBMIT_BINARY="/usr/bin/git-release.ruby2.5"
+        SUBMIT_BINARY="git-release"
 
         ACTION_LIST = [
             :list_branches,
