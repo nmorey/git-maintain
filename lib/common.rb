@@ -1,9 +1,10 @@
-BACKPORT_LIB_DIR = File.dirname(__FILE__)
 $LOAD_PATH.push(BACKPORT_LIB_DIR)
 
 require 'travis'
 require 'repo'
 require 'branch'
+
+$LOAD_PATH.pop()
 
 module GitMaintain
     class Common
