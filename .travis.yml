@@ -22,5 +22,5 @@ deploy:
     api_key:
       secure: Low7xMZFQnHmlwme4/3YK+9sCgsRaB4VPurYgc1TK3Qhy9ArL1yexk3dqESUBqOyk6oFKhLtvOWxjnldAFqkASF+5m62PANwt4Bb1RGpX5MUsL4/3sYIB37rMpcBytZbK8q8mPMGMGcGNLFqcf7Vz7Hh1ZmUsSejrBmNAT5iX2j8AG3C/fjYQVw3+8ikNO3KZmeG8eVodZzs8abolZy78ogxl0DxEtGnwkbOuTQfbHSPr5Pca+tVl/6GlUr8Ipv5HSKxG1LtiK3pHzhVwXGZLnqKjeXoIi7aRc9OE6/S4UJcn+hkKw9IJgs2vSx+eCLZVC5QGiqEG6nSXFu3epA6F6HJbCWa8XVSzxcDR0aRg7IWaxGebt1viOFgX92bRG/bCaV7pOu1akO6ehUTl7PoxJiSySBnwb9xtW307Y/t/bdPpW5ntKr9VHjU9PVchC0femJoi8rX3HA+r+TxFONPg65Yw9ERbdoGxYoUHVIuNQRcO/Q/O/uu25olfL2plBS2go4t3u9FWLeDXjU3FwTrMI5Lom3Xx7FE9rqiuPJZ0b+zjCFwfcCP6DTY9vNx37vsdEMYjpPFm5wm6jVDz0t03ykavO4fpHxMFPQKCMRWqc6LoiNR6kN3Sl0vLfcHUXHQSveVfL2iFfFpXxgego4vtNpo/cPvFnxCqtsPpvGdTto=
     on:
-      tags: true
+      branch: master
     gemspec: git-maintain.gemspec
