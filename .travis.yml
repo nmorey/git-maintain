@@ -8,9 +8,10 @@ rvm:
 script:
 - gem build git-maintain.gemspec
 deploy:
-  provider: releases
+  provider: rubygems
   api_key:
     secure: dbYzacAND+Ni61LEu5eJrJRwq4hlWWpmPlUrFR5EOhPvD+MYZpdo2T/HSugVU+BlHb4gaPQbH2xv9o9DJdH7lw5q7dgNpZ/1VGcozVtekAB4sThi1WPGl26sep5wdLro/Gss6lMWX76xDvYeV1Yjpnan7Wi+NjxYh71KYgC1htHw9Mug2+lI9G6w1CRolxygVh1hUPIjh9h7yv+pp9Y+v2DNHPJqnL4MdyNzipGCTrxno7C0/MUTSHnUk/5Ir2tTVsKwrhL+f2jfhF7it8a3w6MTNmzKObQU0YuEdDNg/62FZZqtoGmlqSttee+SEPurz6Wv+vskcHwEw8ZH5NBoJsUcczpEu6/nlSnyUdt/JBz2NZReU7va4othiTXwL+2j3ng+3iViI7QL0zLjJjHcYazqo+pyHmbV7LOKycu12WQnWYujuTGZzYk7s5AzTzp5om8GnkoJxQZSuxyKF7jChc+ByNGnWo0hXCggViFh8gjDKHczSQ1S0yX/VqPQfiURKhKys+1Oe17S9AHSZ24BtYrQdK6aHd6jfoe7NNIFHXeJUCk9eiWYq1/qQbzaVFupCX0En5QUqN1FurICzg1h5IgPn6ULRuWiyAjdLbYP7B8mGlw8H7w2SXGe6RKtswLrg3Y+GIqq/4LuBKDq05ydS3EJvVNyg84zcEKr5U5zAY4=
-  file: git-maintain-*.gem
   on:
     repo: nmorey/git-maintain
+    tags: true
+  gemspec: git-maintain.gemspec
