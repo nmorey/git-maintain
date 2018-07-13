@@ -47,10 +47,17 @@ module GitMaintain
             if path == nil
                 @path = Dir.pwd()
             end
-            @remote_valid=`git --work-tree=#{@path} remote -v | egrep '^#{VALID_REPO}' | grep fetch |
-                                awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'`.chomp()
-            @remote_stable=`git --work-tree=#{@path} remote -v | egrep '^#{STABLE_REPO}' | grep fetch |
-                                      awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'`.chomp()
+            @remote_valid=runGit("remote -v | egrep '^#{VALID_REPO}' | grep fetch |
+                                awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
+            @remote_stable=runGit("remote -v | egrep '^#{STABLE_REPO}' | grep fetch |
+                                      awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
+            @stable_base_patterns=
+                runGit("config --get-regexp   stable-base | egrep '^stable-base\.' | "+
+                       "sed -e 's/stable-base\.//' -e 's/---/\\//g'").split("\n").inject({}){ |m, x|
+                y=x.split(" ");
+                m[y[0]] = y[1]
+                m
+                }
         end
         attr_reader :path, :remote_valid, :remote_stable
 
@@ -61,6 +68,10 @@ module GitMaintain
             return system("cd #{@path} && #{cmd}")
         end
         def runGit(cmd)
+            if ENV["DEBUG"].to_s() != "" then
+                puts "Called from #{caller[1]}"
+                puts "Running git command '#{cmd}'"
+            end
             return `git --work-tree=#{@path} #{cmd}`.chomp()
         end
         def runGitImap(cmd)
@@ -151,7 +162,12 @@ module GitMaintain
             end
             puts `#{SUBMIT_BINARY}`
         end
-
+        def findStableBase(branch)
+            @stable_base_patterns.each(){|pattern, base|
+                return base if branch =~ /#{pattern}\//
+            }
+            raise("Could not a find a stable base for branch #{branch}")
+        end
 
         def list_branches(opts)
             puts getStableList(opts[:br_suff])

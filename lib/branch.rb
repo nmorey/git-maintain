@@ -1,4 +1,13 @@
 module GitMaintain
+
+    class CherryPickErrorException < StandardError
+        def initialize(str, commit)
+            @commit = commit
+            super(str)
+        end
+        attr_reader :commit
+    end
+
     class Branch
         ACTION_LIST = [
             :cp, :steal, :list, :merge,
@@ -116,6 +125,7 @@ module GitMaintain
             @remote_branch ="stable-v#{@version}"
             @remote_ref    = "#{Repo::STABLE_REPO}/#{@remote_branch}"
             @stable_head   = @repo.runGit("rev-parse #{@remote_ref}")
+            @stable_base   = @repo.findStableBase(@local_branch)
         end
         attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head
 
@@ -151,7 +161,7 @@ module GitMaintain
 
         # Steal upstream commits that are not in the branch
         def steal(opts)
-            @repo.runSystem("git steal-commits")
+             steal_all(opts, "#{@stable_base}..origin/master")
         end
 
         # List commits in the branch that are no in the stable branch
@@ -239,5 +249,212 @@ module GitMaintain
         def release(opts)
             puts "#No release command available for this repo"
         end
+
+        private
+        def add_blacklist(commit)
+  	        @repo.runGit("notes append -m \"#{@local_branch}\" #{commit}")
+        end
+
+        def is_blacklisted?(commit)
+            @repo.runGit("notes show #{commit} 2> /dev/null").split("\n").each(){|br|
+                return true if br == @local_branch
+            }
+            return false
+        end
+
+        def make_pretty(orig_commit, commit="")
+            orig_sha=@repo.runGit("rev-parse #{orig_commit}")
+            msg_commit = (commit.to_s() == "") ? orig_sha : commit
+
+            msg_path=`mktemp`.chomp()
+            msg_file = File.open(msg_path, "w+")
+	        msg_file.puts @repo.runGit("log -1 --format=\"%s%n%n[ Upstream commit #{msg_commit} ]%n%n%b\" #{orig_commit}")
+            msg_file.close()
+	        @repo.runGit("commit -s --amend -F #{msg_path}")
+            `rm -f #{msg_path}`
+        end
+
+        def is_in_tree?(commit)
+	        fullhash=@repo.runGit("rev-parse #{commit}")
+	        # This might happen if someone pointed to a commit that doesn't exist in our
+	        # tree.
+	        if $? != 0 then
+		        return false
+	        end
+
+	        # Hope for the best, same commit is/isn't in the current branch
+	        if @repo.runGit("merge-base #{fullhash} HEAD") == fullhash then
+		        return true
+	        end
+
+	        # Grab the subject, since commit sha1 is different between branches we
+	        # have to look it up based on subject.
+	        subj=@repo.runGit("log -1 --pretty=\"%s\" #{commit}")
+	        if $? != 0 then
+		        return false
+	        end
+
+	        # Try and find if there's a commit with given subject the hard way
+	        @repo.runGit("log --pretty=\"%H\" -F --grep \"#{subj}\" "+
+                         "#{@stable_base}..HEAD").split("\n").each(){|cmt|
+                cursubj=@repo.runGit("log -1 --format=\"%s\" #{cmt}")
+                if cursubj = subj then
+	                return true
+		        end
+	        }
+	        return false
+        end
+
+        def is_relevant?(commit)
+	        # Let's grab the commit that this commit fixes (if exists (based on the "Fixes:" tag)).
+	        fixescmt=@repo.runGit("log -1 #{commit} | grep -i \"fixes:\" | head -n 1 | "+
+                                  "sed -e 's/^[ \\t]*//' | cut -f 2 -d ':' | "+
+                                  "sed -e 's/^[ \\t]*//' -e 's/\\([0-9a-f]\\+\\)(/\\1 (/' | cut -f 1 -d ' '")
+
+	        # If this commit fixes anything, but the broken commit isn't in our branch we don't
+	        # need this commit either.
+	        if fixescmt != "" then
+		          if is_in_tree?(fixescmt) then
+                      return true
+                  else
+                      return false
+                  end
+            end
+
+	        if @repo.runGit("show #{commit} | grep -i 'stable@' | wc -l") == "0" then
+		        return false
+	        end
+
+	        # Let's see if there's a version tag in this commit
+	        full=@repo.runGit("show #{commit} | grep -i 'stable@'").gsub(/.* /, "")
+
+	        # Sanity check our extraction
+            if full =~ /stable/ then
+                return false
+            end
+
+	        # Make sure our branch contains this version
+	        if @repo.runGit("merge-base #{@head} #{full}") == full then
+		        return true
+	        end
+
+	        # Tag is not in history, ignore
+	        return false
+        end
+
+        def pick_one(commit)
+            @repo.runGit("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
+	        return if  $? == 0
+
+		    if [ @repo.runGit("status -uno --porcelain | wc -l") != 0 ]; then
+			    @repo.runGit("reset --hard")
+			    return
+		    end
+		    @repo.runGit("reset --hard")
+		    # That didn't work? Let's try that with every variation of the commit
+		    # in other stable trees.
+            find_alts(commit).each(){|alt_commit|
+			    @repo.runCmd("cherry-pick --strategy=recursive -Xpatience -x #{alt_commit} &> /dev/null")
+			    if $? == 0 then
+				    return
+			    end
+			    @repo.runCmd("reset --hard")
+            }
+		    # Still no? Let's go back to the original commit and hand it off to
+		    # the user.
+		    @repo.runCmd("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
+            raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
+	        return false
+        end
+
+        def confirm_one(opts, commit)
+ 		    rep=""
+		    do_cp=false
+		    puts @repo.runGit("show --format=oneline --no-patch --no-decorate #{commit}")
+		    while rep != "y" do
+			    puts "Do you want to steal this commit ? (y/n/b/?)"
+                if opts[:no] == true then
+                    puts "Auto-replying no due to --no option"
+                    rep = 'n'
+                    break
+                else
+                    rep = STDIN.gets.chomp()
+                end
+			    case rep
+				when "n"
+			        puts "Skip this commit"
+					break
+				when "b"
+					puts "Blacklisting this commit for the current branch"
+					add_blacklist(commit)
+					break
+				when "y"
+					rep="y"
+					do_cp=true
+					break
+				when "?"
+					puts @repo.runGit("show #{commit}")
+                else
+					STDERR.puts "Invalid answer $rep"
+		            puts @repo.runGit("show --format=oneline --no-patch --no-decorate #{commit}")
+                end
+		    end
+            return do_cp
+        end
+
+        def steal_one(opts, commit)
+		    subj=@repo.runGit("log -1 --format=\"%s\" #{commit}")
+		    msg=''
+
+		    # Let's grab the mainline commit id, this is useful if the version tag
+		    # doesn't exist in the commit we're looking at but exists upstream.
+		    orig_cmt=@repo.runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
+            "#{@stable_base}..origin/master | tail -n1")
+
+		    # If the commit doesn't apply for us, skip it
+		    if is_relevant?(orig_cmt) != true
+                return
+		    end
+
+		    if is_in_tree?(orig_cmt) == true
+		        # Commit is already in the stable branch, skip
+                return
+		    end
+
+		    # Check if it's not blacklisted by a git-notes
+		    if is_blacklisted?(orig_cmt) == true then
+		        # Commit is blacklisted
+			    puts "Skipping 'blacklisted' commit " +
+                     @repo.runGit("show --format=oneline --no-patch --no-decorate #{orig_cmt}")
+                return
+		    end
+
+            do_cp = confirm_one(opts, orig_cmt)
+            return if do_cp != true
+
+            begin
+		        pick_one(commit)
+            rescue CherryPickErrorException => e
+			    puts "Cherry pick failed. Fix, commit (or reset) and exit."
+			    @repo.runSystem("/bin/bash")
+                return
+            end
+
+		    # If we didn't find the commit upstream then this must be a custom commit
+		    # in the given tree - make sure the user checks this commit.
+		    if orig_cmt == "" then
+			    msg="Custom"
+			    orig_cmt=@repo.runGit("rev-parse HEAD")
+			    puts "Custom commit, please double-check!"
+			    @repo.runSystem("/bin/bash")
+		    end
+		    make_pretty(orig_cmt, msg)
+        end
+
+        def steal_all(opts, range)
+ 	        @repo.runGit("log --no-merges --format=\"%H\" #{range} | tac").split("\n").each(){|commit|
+                steal_one(opts, commit)
+            }
+       end
     end
 end

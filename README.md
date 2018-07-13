@@ -2,8 +2,8 @@ git-maintain is a single ruby script to deal with all the hassle of maintaining 
 
 The idea is to script mos tof the maintenance tasks so the maintainer can focus on just reviweing and not on writing up release notes and such.
 
-- Note: the workflow is highly tied to the git-topic-branches (https://github.com/nmorey/git-topic-branches).
-To use the 'steal' command it will be required.
+- Note: the workflow is highly inspired to the git-topic-branches (https://github.com/nmorey/git-topic-branches)
+  and both can be used at the same time
 - Note2: Releasing on github is done through the git-release (https://github.com/mpalmer/github-release)
 
 # Command summary
@@ -33,9 +33,7 @@ To use the 'steal' command it will be required.
 
 ## Stealing commits
 
-The steal feature uses git-topic-branches (which shamelessly copied it from https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/
-
-It requires the 'git steal-commits' command to work which should point to the 'stable-steal-commits' script from git-topic-branches
+The steal feature uses was shamelessly copied it from https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/
 
 ## Making releases
 The release process being very specific to each project, the release command does nothing by default.
@@ -48,7 +46,7 @@ In this case, the release command bump the version in all the appropriate files 
 # How do I use it
 
 ## Branch setup
-As said, this uses the branching schemes used by git-topic-branches.
+As said, this uses the branching schemes recommended/compatible of git-topic-branches.
 
 A non compulsory recommendation is to create
 I personnaly uses this scheme for my rdma-core work:
@@ -88,7 +86,7 @@ stable-base.dev---stable-v17 v17
 stable-base.dev---stable-v16 v16
 stable-base.dev---stable-v15 v15
 ```
-This will allow 'steal-stable-commits' to figure out what should be backported in the stable branches.
+This will allow 'git maintain steal' to figure out what should be backported in the stable branches.
 
 ## Day-to-day workflow
 
@@ -133,7 +131,7 @@ Note: This has been made as safe as possible and is querying you before doing an
 
 ## Stealing commits
 
-This uses the git-topic-branches 'steal-stable-commits' script originally available here https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/
+This uses a ruby version of the 'steal-stable-commits' script originally available here https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/
 
 It allows to automatically cherry-pick commits that have been marked as fixing a bug in your branch.
 
@@ -146,7 +144,6 @@ It will then check if the broken commit is in your branch (and not already fixed
 If the developers from your project follow this, it removes a lot of the hassle of finding which patch applies to which branches, It will do it for you !
 
 You can get more infos on how all this works here: https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/README (stable steal-commits section).
-Note that this was slightly change to better fit the git-topic-branches usecase
 
 One of the added feature is the ability to blacklist a commit for certain branch.
 (Useful when there is a commit broken in your stable branch but the fix breaks the ABI or simply won't apply.)
@@ -156,7 +153,7 @@ Blacklisting is done through git-notes. It attaches a note to the "fix" commit i
 
 Note that blacklisted commites will show an info message when skipped so you don't have to dig through all the notes to find which one you wanted.
 
-To run the "auto steal", simply run:
+To run:
 
 ```git maintain steal```
 
