@@ -3,12 +3,19 @@ Gem::Specification.new do |s|
   s.version     = "0.1.1"
   s.version     = "#{s.version}-alpha-#{ENV['TRAVIS_BUILD_NUMBER']}" if ENV['TRAVIS']
   s.date        = "2018-07-13"
-  s.summary     = "git-maintain is a single ruby script to deal with all the hassle of maintaining stable branches in a project."
-  s.description = "The idea is to script most of the maintenance tasks so the maintainer can focus on just reviewing and not on writing up release notes, looking for commits and such."
+  s.summary     = "Your ultimate script for maintaining stable branches."
+  s.description = "Be lazy and let git-maintain do all the heavy lifting for maintaining stable branches.
+Leaves you only with the essential: reviewing the selected patches and decide where they should go."
   s.authors     = ["Nicolas Morey-Chaisemartin"]
   s.email       = 'nmoreychaisemartin@suse.de'
   s.executables << 'git-maintain'
-  s.files       = ["lib/branch.rb", "lib/common.rb", "lib/repo.rb", "lib/travis.rb", "lib/addons/RDMACore.rb", "git-maintain-completion.sh" ]
+  s.files       = [
+    "LICENSE",
+    "README.md",
+    "lib/branch.rb", "lib/common.rb", "lib/repo.rb", "lib/travis.rb",
+    "lib/addons/RDMACore.rb",
+    "git-maintain-completion.sh"
+  ]
   s.homepage    =
     'https://github.com/nmorey/git-maintain'
   s.license       = 'MIT'
