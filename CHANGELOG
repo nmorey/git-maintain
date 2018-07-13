@@ -3,6 +3,7 @@
 ------------------
 
 * Add dependency to github-release
+* Add release script
 
 ------------------
 0.2.0 (2018-07-13)
