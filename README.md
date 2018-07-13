@@ -4,7 +4,7 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 
 - Note: the workflow is highly inspired to the git-topic-branches (https://github.com/nmorey/git-topic-branches)
   and both can be used at the same time
-- Note2: Releasing on github is done through the git-release (https://github.com/mpalmer/github-release)
+- Note2: Releasing on github is done through github-release gem (https://github.com/mpalmer/github-release)
 
 # Command summary
 

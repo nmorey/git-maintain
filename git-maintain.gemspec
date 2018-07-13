@@ -19,4 +19,5 @@ Gem::Specification.new do |s|
   s.homepage    =
     'https://github.com/nmorey/git-maintain'
   s.license       = 'MIT'
+  s.add_dependency 'github-release'
 end
