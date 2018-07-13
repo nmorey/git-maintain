@@ -1,0 +1,4 @@
+language: rubydist: trusty
+dist: trusty
+script:
+  - gem build git-maintain.gemspec
