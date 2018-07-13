@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'git-maintain'
-  s.version     = "0.1.1"
+  s.version     = `git describe`.chomp().gsub(/^v/, "").gsub(/-([0-9]+)-g/, '-\1.g')
   s.date        = "2018-07-13"
   s.summary     = "Your ultimate script for maintaining stable branches."
   s.description = "Be lazy and let git-maintain do all the heavy lifting for maintaining stable branches.
