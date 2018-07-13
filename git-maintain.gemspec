@@ -10,6 +10,7 @@ Gem::Specification.new do |s|
   s.executables << 'git-maintain'
   s.files       = [
     "LICENSE",
+    "CHANGELOG",
     "README.md",
     "lib/branch.rb", "lib/common.rb", "lib/repo.rb", "lib/travis.rb",
     "lib/addons/RDMACore.rb",
