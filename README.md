@@ -1,6 +1,6 @@
-git-maintain is a single ruby script to deal with all the hassle of maintaining stable branches in a project.
+git-maintain is a simple ruby script to deal with all the hassle of maintaining stable branches in a project.
 
-The idea is to script mos tof the maintenance tasks so the maintainer can focus on just reviweing and not on writing up release notes and such.
+The idea is to script most of the maintenance tasks so the maintainer can focus on just reviewing and not on writing up release notes, looking for commits and such.
 
 - Note: the workflow is highly inspired to the git-topic-branches (https://github.com/nmorey/git-topic-branches)
   and both can be used at the same time
