@@ -103,6 +103,8 @@ module GitMaintain
         end
 
         def initialize(repo, version, travis, branch_suff)
+            GitMaintain::checkDirectConstructor(self.class)
+
             @repo          = repo
             @version       = version
             @travis        = travis

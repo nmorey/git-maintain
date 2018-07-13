@@ -8,6 +8,8 @@ module GitMaintain
         end
 
         def initialize(repo)
+            GitMaintain::checkDirectConstructor(self.class)
+
             @repo = repo
             @cachedJson={}
         end

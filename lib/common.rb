@@ -40,6 +40,19 @@ module GitMaintain
     end
     module_function :loadClass
 
+    # Check that the constructor was called through loadClass
+    def checkDirectConstructor(theClass)
+        # Look for the "new" in the calling tree
+        depth = 1
+        while caller_locations(depth, 1)[0].label != "new"
+            depth +=1
+        end
+        # The function that called the constructer is just one step below
+        raise("Use GitMaintain::loadClass to construct a #{theClass} class") if
+                caller_locations(depth + 1, 1)[0].label != "loadClass"
+    end
+    module_function :checkDirectConstructor
+
     def getActionAttr(attr)
         return ACTION_CLASS.map(){|x| x.const_get(attr)}.flatten()
     end

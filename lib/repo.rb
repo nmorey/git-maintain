@@ -37,6 +37,8 @@ module GitMaintain
         end
 
         def initialize(path=nil)
+            GitMaintain::checkDirectConstructor(self.class)
+
             @path = path
             @stable_list=nil
             @stable_branches=nil
