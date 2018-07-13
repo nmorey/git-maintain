@@ -6,7 +6,7 @@ rvm:
 - 2.2.3
 - 2.5.0
 script:
-- gem build git-maintain.gemspec
+- ./bin/git-maintain --help
 deploy:
   provider: rubygems
   api_key:
