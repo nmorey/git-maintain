@@ -11,5 +11,5 @@ Gem::Specification.new do |s|
   s.files       = ["lib/branch.rb", "lib/common.rb", "lib/repo.rb", "lib/travis.rb", "lib/addons/RDMACore.rb", "git-maintain-completion.sh" ]
   s.homepage    =
     'https://github.com/nmorey/git-maintain'
-  s.license       = 'GPL-2.0'
+  s.license       = 'MIT'
 end
