@@ -17,9 +17,9 @@ module GitMaintain
     ACTION_CLASS = [ Common, Branch, Repo ]
     @@custom_classes = {}
 
-    def registerCustom(repo_name, repoClass, branchClass)
+    def registerCustom(repo_name, classes)
         raise("Multiple class for repo #{repo_name}") if @@custom_classes[repo_name] != nil
-        @@custom_classes[repo_name] = { :repo => repoClass, :branch => branchClass }
+        @@custom_classes[repo_name] = classes
     end
     module_function :registerCustom
 
@@ -27,6 +27,18 @@ module GitMaintain
         return @@custom_classes[repo_name]
     end
     module_function :getCustom
+
+    def loadClass(default_class, repo_name, *more)
+        custom = @@custom_classes[repo_name]
+        if custom != nil && custom[default_class] != nil then
+            puts "# Detected custom #{default_class} class for repo '#{repo_name}'" if ENV['DEBUG'] == "1"
+            return custom[default_class].new(*more)
+        else
+            puts "# Detected NO custom #{default_class} classes for repo '#{repo_name}'" if ENV['DEBUG'] == "1"
+            return default_class.new(*more)
+        end
+    end
+    module_function :loadClass
 
     def getActionAttr(attr)
         return ACTION_CLASS.map(){|x| x.const_get(attr)}.flatten()

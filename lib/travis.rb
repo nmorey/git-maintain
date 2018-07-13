@@ -2,6 +2,11 @@ module GitMaintain
     class TravisChecker
         TRAVIS_URL='https://api.travis-ci.org/'
 
+        def self.load(repo)
+            repo_name = File.basename(repo.path)
+            return GitMaintain::loadClass(TravisChecker, repo_name, repo)
+        end
+
         def initialize(repo)
             @repo = repo
             @cachedJson={}

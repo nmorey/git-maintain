@@ -16,13 +16,7 @@ module GitMaintain
         def self.load(path=".")
             dir = Dir.pwd()
             repo_name = File.basename(dir)
-            custom = GitMaintain::getCustom(repo_name)
-            if custom != nil then
-                puts "# Detected custom classes for repo '#{repo_name}'" if ENV['DEBUG'] == 1
-                return custom[:repo].new(dir)
-            else
-                return Repo.new(dir)
-            end
+            return GitMaintain::loadClass(Repo, repo_name, dir)
         end
 
         def self.check_opts(opts)

@@ -27,12 +27,7 @@ module GitMaintain
 
         def self.load(repo, version, travis, branch_suff)
             repo_name = File.basename(repo.path)
-            custom = GitMaintain::getCustom(repo_name)
-            if custom != nil then
-                return custom[:branch].new(repo, version, travis, branch_suff)
-            else
-                return Branch.new(repo, version, travis, branch_suff)
-            end
+            return GitMaintain::loadClass(Branch, repo_name, repo, version, travis, branch_suff)
         end
 
         def self.set_opts(action, optsParser, opts)
@@ -79,7 +74,7 @@ module GitMaintain
 
         def self.execAction(opts, action)
             repo   = Repo::load()
-            travis = TravisChecker.new(repo)
+            travis = TravisChecker::load(repo)
 
             if NO_FETCH_ACTIONS.index(action) == nil  then
                 repo.stableUpdate()
