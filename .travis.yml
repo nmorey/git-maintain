@@ -17,5 +17,6 @@ deploy:
   file: git-maintain*.gem
   on:
     repo: nmorey/git-maintain
+    tags: true
   before_deploy:
     - gem build git-maintain.gemspec
