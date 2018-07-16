@@ -404,6 +404,7 @@ module GitMaintain
 
         def steal_one(opts, commit)
 		    subj=@repo.runGit("log -1 --format=\"%s\" #{commit}")
+            subj.gsub!(/"/, '\"')
 		    msg=''
 
 		    # Let's grab the mainline commit id, this is useful if the version tag
