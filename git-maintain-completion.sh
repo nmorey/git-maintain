@@ -22,6 +22,10 @@ _complete_git_maintain_branch(){
 			BRANCHES=
 			__gitcomp_nl "$(git maintain list_branches)"
 			;;
+		-V|--version)
+			# Extra arg expected but not completable
+			__gitcomp_nl ""
+			;;
 	esac
 }
 
