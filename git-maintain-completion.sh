@@ -88,6 +88,9 @@ _git_maintain(){
 			 case "$prev" in
 				 *)
 					__gitcomp_nl "$OPT_LIST"
+					# Override default completion with specific branch completion (if it matches)
+					_complete_git_maintain_branch
+
 			 esac
 		 fi
 	fi
