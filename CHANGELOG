@@ -5,6 +5,7 @@
 * Fix support for commit messages containing double quotes
 * Fix --base-version and --branch-suffix
 * Add completion support for --version
+* Fix --no-travis
 
 ------------------
 0.2.2  (2018-07-13)

@@ -68,7 +68,7 @@ module GitMaintain
             when :push_stable
                 optsParser.banner += "[-T]"
                 optsParser.on("-T", "--no-travis", "Ignore Travis build status and push anyway.") {
-                    |val| opts[:no_travis] = val}
+                    |val| opts[:no_travis] = true}
             end
         end
 
