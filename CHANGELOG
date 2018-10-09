@@ -1,11 +1,10 @@
-------------------
-0.2.3
-------------------
-
 * Fix support for commit messages containing double quotes
 * Fix --base-version and --branch-suffix
 * Add completion support for --version
 * Fix --no-travis
+* Customizable behaviour for travis/emails in Addons
+* Allow branch action to be run on user-specified branches (instead of the stable pattern)
+* Add hpc-testing addon
 
 ------------------
 0.2.2  (2018-07-13)
