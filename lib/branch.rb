@@ -112,7 +112,7 @@ module GitMaintain
             end
             branchList.each(){|branch|
                 puts "###############################"
-                puts "# Working on v#{branch.version}"
+                puts "# Working on #{branch.verbose_name}"
                 puts "###############################"
 
                 if NO_CHECKOUT_ACTIONS.index(action) == nil  then
@@ -133,8 +133,12 @@ module GitMaintain
             if version =~ /^[0-9]+$/
                 @local_branch  = "dev/stable-v#{@version}/#{@branch_suff}"
                 @remote_branch ="stable-v#{@version}"
+                @branch_type = :std
+                @verbose_name = "v"+version
             else
                 @remote_branch = @local_branch = version
+                @branch_type = :user_specified
+                @verbose_name = version
             end
 
             @head          = @repo.runGit("rev-parse #{@local_branch}")
@@ -143,10 +147,10 @@ module GitMaintain
             @stable_base   = @repo.findStableBase(@local_branch)
 
         end
-        attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head
+        attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head, :verbose_name
 
         def is_targetted?(opts)
-            return true if @version !~ /^[0-9]+$/
+            return true if @branch_type == :user_specified
             if @version.to_i < opts[:base_ver] then
                 return :too_old
             end
