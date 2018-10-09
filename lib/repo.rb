@@ -54,9 +54,9 @@ module GitMaintain
             @stable_repo = @@STABLE_REPO if @stable_repo == ""
 
             @remote_valid=runGit("remote -v | egrep '^#{@valid_repo}' | grep fetch |
-                                awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
+                                awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
             @remote_stable=runGit("remote -v | egrep '^#{@stable_repo}' | grep fetch |
-                                      awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
+                                      awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
             @stable_base_patterns=
                 runGit("config --get-regexp   stable-base | egrep '^stable-base\.' | "+
                        "sed -e 's/stable-base\.//' -e 's/---/\\//g'").split("\n").inject({}){ |m, x|
