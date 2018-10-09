@@ -1,8 +1,8 @@
 module GitMaintain
     class Repo
-        VALID_REPO = "github"
-        STABLE_REPO = "stable"
-        SUBMIT_BINARY="git-release"
+        @@VALID_REPO = "github"
+        @@STABLE_REPO = "stable"
+        @@SUBMIT_BINARY="git-release"
 
         ACTION_LIST = [
             :list_branches,
@@ -36,6 +36,13 @@ module GitMaintain
             repo.send(action, opts)
         end
 
+        def getValidRepo()
+            return @@VALID_REPO
+        end
+        def getStableRepo()
+            return @@STABLE_REPO
+        end
+
         def initialize(path=nil)
             GitMaintain::checkDirectConstructor(self.class)
 
@@ -47,9 +54,9 @@ module GitMaintain
             if path == nil
                 @path = Dir.pwd()
             end
-            @remote_valid=runGit("remote -v | egrep '^#{VALID_REPO}' | grep fetch |
+            @remote_valid=runGit("remote -v | egrep '^#{@@VALID_REPO}' | grep fetch |
                                 awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
-            @remote_stable=runGit("remote -v | egrep '^#{STABLE_REPO}' | grep fetch |
+            @remote_stable=runGit("remote -v | egrep '^#{@@STABLE_REPO}' | grep fetch |
                                       awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
             @stable_base_patterns=
                 runGit("config --get-regexp   stable-base | egrep '^stable-base\.' | "+
@@ -86,7 +93,7 @@ module GitMaintain
 
         def stableUpdate()
             puts "# Fetching stable updates..."
-            runGit("fetch #{STABLE_REPO}")
+            runGit("fetch #{@@STABLE_REPO}")
         end
         def getStableList(br_suff)
             return @stable_list if @stable_list != nil
@@ -111,7 +118,7 @@ module GitMaintain
         end
 
         def submitReleases(opts)
-            remote_tags=runGit("ls-remote --tags #{STABLE_REPO} |
+            remote_tags=runGit("ls-remote --tags #{@@STABLE_REPO} |
                                  egrep 'refs/tags/v[0-9.]*$'").split("\n").map(){
                 |x| x.gsub(/.*refs\/tags\//, '')
             }
