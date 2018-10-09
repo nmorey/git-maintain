@@ -135,7 +135,7 @@ module GitMaintain
             end
 
             @head          = @repo.runGit("rev-parse #{@local_branch}")
-            @remote_ref    = "#{@repo.getStableRepo()}/#{@remote_branch}"
+            @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
             @stable_head   = @repo.runGit("rev-parse #{@remote_ref}")
             @stable_base   = @repo.findStableBase(@local_branch)
 
@@ -202,7 +202,7 @@ module GitMaintain
 
         # Push the branch to the validation repo
         def push(opts)
-           @repo.runGit("push #{opts[:push_force] == true ? "-f" : ""} #{@repo.getValidRepo()} #{@local_branch}")
+           @repo.runGit("push #{opts[:push_force] == true ? "-f" : ""} #{@repo.valid_repo} #{@local_branch}")
         end
 
         # Monitor the build status on Travis
@@ -237,7 +237,7 @@ module GitMaintain
             end
             rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "submit")
             if rep == "y" then
-                @repo.runGit("push #{@repo.getStableRepo()} #{@local_branch}:#{@remote_branch}")
+                @repo.runGit("push #{@repo.stable_repo} #{@local_branch}:#{@remote_branch}")
             else
                 puts "Skipping push to stable"
                 return

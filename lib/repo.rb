@@ -36,13 +36,6 @@ module GitMaintain
             repo.send(action, opts)
         end
 
-        def getValidRepo()
-            return @@VALID_REPO
-        end
-        def getStableRepo()
-            return @@STABLE_REPO
-        end
-
         def initialize(path=nil)
             GitMaintain::checkDirectConstructor(self.class)
 
@@ -54,9 +47,15 @@ module GitMaintain
             if path == nil
                 @path = Dir.pwd()
             end
-            @remote_valid=runGit("remote -v | egrep '^#{@@VALID_REPO}' | grep fetch |
+
+            @valid_repo = runGit("config maintain.valid-repo 2> /dev/null").chomp()
+            @valid_repo = @@VALID_REPO if @valid_repo == ""
+            @stable_repo = runGit("config maintain.stable-repo 2>/dev/null").chomp()
+            @stable_repo = @@STABLE_REPO if @stable_repo == ""
+
+            @remote_valid=runGit("remote -v | egrep '^#{@valid_repo}' | grep fetch |
                                 awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
-            @remote_stable=runGit("remote -v | egrep '^#{@@STABLE_REPO}' | grep fetch |
+            @remote_stable=runGit("remote -v | egrep '^#{@stable_repo}' | grep fetch |
                                       awk '{ print $2}' | sed -e 's/.*://' -e 's/\.git//'")
             @stable_base_patterns=
                 runGit("config --get-regexp   stable-base | egrep '^stable-base\.' | "+
@@ -66,7 +65,7 @@ module GitMaintain
                 m
                 }
         end
-        attr_reader :path, :remote_valid, :remote_stable
+        attr_reader :path, :remote_valid, :remote_stable, :valid_repo, :stable_repo
 
         def run(cmd)
             return `cd #{@path} && #{cmd}`
@@ -93,7 +92,7 @@ module GitMaintain
 
         def stableUpdate()
             puts "# Fetching stable updates..."
-            runGit("fetch #{@@STABLE_REPO}")
+            runGit("fetch #{@stable_repo}")
         end
         def getStableList(br_suff)
             return @stable_list if @stable_list != nil
@@ -118,7 +117,7 @@ module GitMaintain
         end
 
         def submitReleases(opts)
-            remote_tags=runGit("ls-remote --tags #{@@STABLE_REPO} |
+            remote_tags=runGit("ls-remote --tags #{@stable_repo} |
                                  egrep 'refs/tags/v[0-9.]*$'").split("\n").map(){
                 |x| x.gsub(/.*refs\/tags\//, '')
             }
