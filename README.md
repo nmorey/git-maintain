@@ -27,9 +27,11 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 - Load git-maintain-completion.sh for shell completion
 
 ## Remote setup
-- the 'github' remote should be your own WIP github to test out branches before submitting to the official repo
+- the 'github' remote should be your own WIP github to test out branches before submitting to the official repo.
+  Also know as the 'Validation' repo. It can be switched to another remote by setting maintain.valid-repo=xxx in your gitconfig
 - the 'origin' remote should be the official repo in read-only mode to avoid any accidental pushes
 - the 'stable' remote should be the official repo in RW mode
+  Also know as the 'Stable' repo. It can be switched to another remote by setting maintain.stable-repo=xxx in your gitconfig
 
 ## Stealing commits
 
