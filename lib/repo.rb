@@ -110,7 +110,7 @@ module GitMaintain
             return @suffix_list
         end
 
-        def submitReleases()
+        def submitReleases(opts)
             remote_tags=runGit("ls-remote --tags #{STABLE_REPO} |
                                  egrep 'refs/tags/v[0-9.]*$'").split("\n").map(){
                 |x| x.gsub(/.*refs\/tags\//, '')
@@ -124,7 +124,7 @@ module GitMaintain
             end
 
             puts "This will officially release these tags: #{new_tags.join(", ")}"
-            rep = GitMaintain::confirm("release them")
+            rep = GitMaintain::confirm(opts, "release them")
             if rep != 'y' then
                 raise "Aborting.."
             end
@@ -156,7 +156,7 @@ module GitMaintain
             puts runGitImap("< #{mail_path}; rm -f #{mail_path}")
 
             puts "Last chance to cancel before submitting"
-            rep= GitMaintain::confirm("submit these releases")
+            rep= GitMaintain::confirm(opts, "submit these releases")
             if rep != 'y' then
                 raise "Aborting.."
             end
@@ -176,7 +176,7 @@ module GitMaintain
             puts getSuffixList()
         end
         def submit_release(opts)
-            submitReleases()
+            submitReleases(opts)
         end
     end
 end
