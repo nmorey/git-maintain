@@ -168,7 +168,7 @@ module GitMaintain
             if rep != 'y' then
                 raise "Aborting.."
             end
-            puts `#{SUBMIT_BINARY}`
+            puts `#{@@SUBMIT_BINARY}`
         end
         def findStableBase(branch)
             @stable_base_patterns.each(){|pattern, base|
