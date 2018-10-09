@@ -51,7 +51,8 @@ module GitMaintain
                 |val| opts[:base_ver] = val}
             optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
                 |val| opts[:version] = val}
-
+            optsParser.on("-B", "--manual-branch <branch name>", "Work on a specific (non-stable) branch.") {
+                |val| opts[:manual_branch] = val}
             case action
             when :cp
                 optsParser.banner += "-c <sha1> [-c <sha1> ...]"
@@ -89,17 +90,24 @@ module GitMaintain
                 repo.stableUpdate()
             end
 
-            repo.getStableList(opts[:br_suff]).each(){|br|
-                branch = Branch::load(repo, br, travis, opts[:br_suff])
-                case branch.is_targetted?(opts)
-                when :too_old
-                    puts "# Skipping older v#{branch.version}"
-                    next
-                when :no_match
-                    puts "# Skipping v#{branch.version} not matching #{opts[:version].to_s()}"
-                    next
-                end
-
+            branchList=[]
+            if opts[:manual_branch] == nil then
+                branchList = repo.getStableList(opts[:br_suff]).map(){|br|
+                    branch = Branch::load(repo, br, travis, opts[:br_suff])
+                    case branch.is_targetted?(opts)
+                    when :too_old
+                        puts "# Skipping older v#{branch.version}"
+                        next
+                    when :no_match
+                        puts "# Skipping v#{branch.version} not matching #{opts[:version].to_s()}"
+                        next
+                    end
+                    branch
+                }.compact()
+            else
+                branchList = [ Branch::load(repo, opts[:manual_branch], travis, opts[:br_suff]) ]
+            end
+            branchList.each(){|branch|
                 puts "###############################"
                 puts "# Working on v#{branch.version}"
                 puts "###############################"
@@ -115,21 +123,27 @@ module GitMaintain
             GitMaintain::checkDirectConstructor(self.class)
 
             @repo          = repo
-            @version       = version
             @travis        = travis
+            @version       = version
             @branch_suff   = branch_suff
 
-            @local_branch  = "dev/stable-v#{@version}/#{@branch_suff}"
-            @head          = @repo.runGit("rev-parse #{@local_branch}")
+            if version =~ /^[0-9]$/
+                @local_branch  = "dev/stable-v#{@version}/#{@branch_suff}"
+                @remote_branch ="stable-v#{@version}"
+            else
+                @remote_branch = @local_branch = version
+            end
 
-            @remote_branch ="stable-v#{@version}"
+            @head          = @repo.runGit("rev-parse #{@local_branch}")
             @remote_ref    = "#{Repo::STABLE_REPO}/#{@remote_branch}"
             @stable_head   = @repo.runGit("rev-parse #{@remote_ref}")
             @stable_base   = @repo.findStableBase(@local_branch)
+
         end
         attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head
 
         def is_targetted?(opts)
+            return true if @version !~ /^[0-9]$/
             if @version.to_i < opts[:base_ver] then
                 return :too_old
             end
