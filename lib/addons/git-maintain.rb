@@ -55,9 +55,6 @@ mv CHANGELOG.new CHANGELOG")
         end
     end
     class GitMaintainRepo < Repo
-        @@VALID_REPO = "origin"
-        @@STABLE_REPO = "origin"
-
         def initialize(path)
             super(path)
             @NOTIFY_RELEASE = false
