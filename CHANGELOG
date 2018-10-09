@@ -5,6 +5,7 @@
 * Customizable behaviour for travis/emails in Addons
 * Allow branch action to be run on user-specified branches (instead of the stable pattern)
 * Add hpc-testing addon
+* Add git-maintain addon
 
 ------------------
 0.2.2  (2018-07-13)
