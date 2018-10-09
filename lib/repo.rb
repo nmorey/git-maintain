@@ -129,31 +129,33 @@ module GitMaintain
                 raise "Aborting.."
             end
 
-            mail_path=`mktemp`.chomp()
-            mail = File.open(mail_path, "w+")
-            mail.puts "From " + runGit("rev-parse HEAD") + " " + `date`.chomp()
-            mail.puts "From: " + runGit("config user.name") +
-                      " <" + runGit("config user.email") +">"
-            mail.puts "To: " + runGit("config patch.target")
-            mail.puts "Date: " + `date -R`.chomp()
-            mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + " " +
-                      (new_tags.length > 1 ?
-                           (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1]) :
-                           new_tags.join(" ")) +
-                      " has been tagged/released"
-            mail.puts ""
-            mail.puts "Here's the information from the tags:"
-            new_tags.sort().each(){|tag|
-                mail.puts `git show #{tag} --no-decorate -q | awk '!p;/^-----END PGP SIGNATURE-----/{p=1}'`
+            if @NOTIFY_RELEASE != false
+                mail_path=`mktemp`.chomp()
+                mail = File.open(mail_path, "w+")
+                mail.puts "From " + runGit("rev-parse HEAD") + " " + `date`.chomp()
+                mail.puts "From: " + runGit("config user.name") +
+                          " <" + runGit("config user.email") +">"
+                mail.puts "To: " + runGit("config patch.target")
+                mail.puts "Date: " + `date -R`.chomp()
+                mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + " " +
+                          (new_tags.length > 1 ?
+                               (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1]) :
+                               new_tags.join(" ")) +
+                          " has been tagged/released"
                 mail.puts ""
-            }
-            mail.puts "It's available at the normal places:"
-            mail.puts ""
-            mail.puts "git://github.com/#{@remote_stable}"
-            mail.puts "https://github.com/#{@remote_stable}/releases"
-            mail.close()
+                mail.puts "Here's the information from the tags:"
+                new_tags.sort().each(){|tag|
+                    mail.puts `git show #{tag} --no-decorate -q | awk '!p;/^-----END PGP SIGNATURE-----/{p=1}'`
+                    mail.puts ""
+                }
+                mail.puts "It's available at the normal places:"
+                mail.puts ""
+                mail.puts "git://github.com/#{@remote_stable}"
+                mail.puts "https://github.com/#{@remote_stable}/releases"
+                mail.close()
 
-            puts runGitImap("< #{mail_path}; rm -f #{mail_path}")
+                puts runGitImap("< #{mail_path}; rm -f #{mail_path}")
+            end
 
             puts "Last chance to cancel before submitting"
             rep= GitMaintain::confirm(opts, "submit these releases")
@@ -164,7 +166,7 @@ module GitMaintain
         end
         def findStableBase(branch)
             @stable_base_patterns.each(){|pattern, base|
-                return base if branch =~ /#{pattern}\//
+                return base if branch =~ /#{pattern}\// || branch =~ /#{pattern}$/
             }
             raise("Could not a find a stable base for branch #{branch}")
         end
