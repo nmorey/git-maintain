@@ -216,7 +216,7 @@ module GitMaintain
 
         # Push branch to the stable repo
         def push_stable(opts)
-            if opts[:no_travis] != true &&
+            if (opts[:no_travis] != true && @NO_TRAVIS != true) &&
                @travis.checkValidState(@head) != true then
                 puts "Build is not passed on travis. Skipping push to stable"
                 return
