@@ -127,7 +127,7 @@ module GitMaintain
             @version       = version
             @branch_suff   = branch_suff
 
-            if version =~ /^[0-9]$/
+            if version =~ /^[0-9]+$/
                 @local_branch  = "dev/stable-v#{@version}/#{@branch_suff}"
                 @remote_branch ="stable-v#{@version}"
             else
@@ -143,7 +143,7 @@ module GitMaintain
         attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head
 
         def is_targetted?(opts)
-            return true if @version !~ /^[0-9]$/
+            return true if @version !~ /^[0-9]+$/
             if @version.to_i < opts[:base_ver] then
                 return :too_old
             end
