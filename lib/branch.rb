@@ -51,8 +51,11 @@ module GitMaintain
                 |val| opts[:base_ver] = val}
             optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
                 |val| opts[:version] = val}
-            optsParser.on("-B", "--manual-branch <branch name>", "Work on a specific (non-stable) branch.") {
-                |val| opts[:manual_branch] = val}
+
+            if action != :merge
+                optsParser.on("-B", "--manual-branch <branch name>", "Work on a specific (non-stable) branch.") {
+                    |val| opts[:manual_branch] = val}
+            end
             case action
             when :cp
                 optsParser.banner += "-c <sha1> [-c <sha1> ...]"
