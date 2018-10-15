@@ -169,7 +169,7 @@ module GitMaintain
         end
 
         # Cherry pick an array of commits
-        def cherry_pick(opts)
+        def cp(opts)
             if opts[:commits].length > 0 then
                 @repo.runGit("cherry-pick #{opts[:commits].join(" ")}")
                 if $? != 0 then

@@ -1,4 +1,5 @@
 * Fix gemspec generation date
+* Fix cp command
 
 ------------------
 0.3.0  (2018-10-09)
