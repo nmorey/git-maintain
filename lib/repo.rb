@@ -126,7 +126,7 @@ module GitMaintain
             new_tags = local_tags - remote_tags
             if new_tags.empty? then
                 puts "All tags are already submitted."
-                #                return
+                return
             end
 
             puts "This will officially release these tags: #{new_tags.join(", ")}"
