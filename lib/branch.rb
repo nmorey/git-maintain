@@ -271,6 +271,13 @@ module GitMaintain
                 puts "Build is not passed on travis. Skipping push to stable"
                 return
             end
+            c1=@repo.runGit("rev-parse --verify --quiet #{@local_branch}")
+            c2=@repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
+            if c1 == c2 then
+                puts "Stable is already up-to-date"
+                return
+            end
+
             rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "submit")
             if rep == "y" then
                 @repo.runGit("push #{@repo.stable_repo} #{@local_branch}:#{@remote_branch}")
