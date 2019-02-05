@@ -48,6 +48,7 @@ module GitMaintain
             opts[:no_travis] = false
             opts[:all] = false
             opts[:check_only] = false
+            opts[:no_fetch] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
@@ -58,6 +59,12 @@ module GitMaintain
                 optsParser.on("-B", "--manual-branch <branch name>", "Work on a specific (non-stable) branch.") {
                     |val| opts[:manual_branch] = val}
             end
+
+            if NO_FETCH_ACTIONS.index(action) == nil
+                optsParser.on("--no-fetch", "Skip fetch of stable repo.") {
+                    |val| opts[:no_fetch] = true}
+            end
+
             case action
             when :cp
                 optsParser.banner += "-c <sha1> [-c <sha1> ...]"
@@ -98,7 +105,7 @@ module GitMaintain
             repo   = Repo::load()
             travis = TravisChecker::load(repo)
 
-            if NO_FETCH_ACTIONS.index(action) == nil  then
+            if NO_FETCH_ACTIONS.index(action) == nil && opts[:no_fetch] == false then
                 repo.stableUpdate()
             end
 
