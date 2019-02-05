@@ -1,5 +1,6 @@
 
 * Handle bad Fixes tag
+* Speed up steal feature by remembering last point checked
 
 ------------------
 0.4.0  (2018-10-15)

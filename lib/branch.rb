@@ -73,6 +73,11 @@ module GitMaintain
                 optsParser.banner += "[-T]"
                 optsParser.on("-T", "--no-travis", "Ignore Travis build status and push anyway.") {
                     |val| opts[:no_travis] = true}
+            when :steal
+                optsParser.banner += "[-a]"
+                optsParser.on("-a", "--all", "Check all commits from master. "+
+                                               "By default only new commits (since last successful run) are considered.") {
+                    |val| opts[:all] = true}
             end
         end
 
@@ -182,7 +187,30 @@ module GitMaintain
 
         # Steal upstream commits that are not in the branch
         def steal(opts)
-             steal_all(opts, "#{@stable_base}..origin/master")
+            base_ref=@stable_base
+
+            # If we are not force checking everything,
+            # try to start from the last tag we steal upto
+            if opts[:all] != true then
+                sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
+                if $? == 0 then
+                    base_ref=sha
+                    puts "# INFO: Starting from last successfull run:"
+                    puts "# INFO: " + @repo.runGit("show --format=oneline #{base_ref}")
+                end
+            end
+
+            master_sha=@repo.runGit("rev-parse origin/master")
+            res = steal_all(opts, "#{base_ref}..#{master_sha}")
+
+            # If we picked all the commits (or nothing happened)
+            # Mark the current master as the last checked point so we
+            # can just steal from this point on the next run
+            if res == true then
+                @repo.runGit("tag -f 'git-maintain/steal/last/#{@stable_base}' origin/master")
+                puts "# INFO: Marking new last successfull run at:"
+                puts "# INFO: " + @repo.runGit("show --format=oneline #{master_sha}")
+         end
         end
 
         # List commits in the branch that are no in the stable branch
@@ -436,12 +464,12 @@ module GitMaintain
 
 		    # If the commit doesn't apply for us, skip it
 		    if is_relevant?(orig_cmt) != true
-                return
+                return true
 		    end
 
 		    if is_in_tree?(orig_cmt) == true
 		        # Commit is already in the stable branch, skip
-                return
+                return true
 		    end
 
 		    # Check if it's not blacklisted by a git-notes
@@ -449,18 +477,18 @@ module GitMaintain
 		        # Commit is blacklisted
 			    puts "Skipping 'blacklisted' commit " +
                      @repo.runGit("show --format=oneline --no-patch --no-decorate #{orig_cmt}")
-                return
+                return true
 		    end
 
             do_cp = confirm_one(opts, orig_cmt)
-            return if do_cp != true
+            return false if do_cp != true
 
             begin
 		        pick_one(commit)
             rescue CherryPickErrorException => e
 			    puts "Cherry pick failed. Fix, commit (or reset) and exit."
 			    @repo.runSystem("/bin/bash")
-                return
+                return false
             end
 
 		    # If we didn't find the commit upstream then this must be a custom commit
@@ -475,9 +503,11 @@ module GitMaintain
         end
 
         def steal_all(opts, range)
+            res = true
  	        @repo.runGit("log --no-merges --format=\"%H\" #{range} | tac").split("\n").each(){|commit|
-                steal_one(opts, commit)
+                res &= steal_one(opts, commit)
             }
+            return res
        end
     end
 end
