@@ -73,6 +73,8 @@ module GitMaintain
                 optsParser.banner += "[-T]"
                 optsParser.on("-T", "--no-travis", "Ignore Travis build status and push anyway.") {
                     |val| opts[:no_travis] = true}
+                optsParser.on("-c", "--check", "Check if there is something to be pushed.") {
+                    |val| opts[:check_only] = true}
             when :steal
                 optsParser.banner += "[-a]"
                 optsParser.on("-a", "--all", "Check all commits from master. "+
@@ -275,6 +277,11 @@ module GitMaintain
             c2=@repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
             if c1 == c2 then
                 puts "Stable is already up-to-date"
+                return
+            end
+
+            if opts[:check_only] == true then
+                GitMaintain::checkLog(opts, @local_branch, @remote_ref, "")
                 return
             end
 

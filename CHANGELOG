@@ -1,4 +1,5 @@
 * Speed up push_stable
+* Add --check option for push_stable
 
 ------------------
 0.5.0  (2019-02-05)
