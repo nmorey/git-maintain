@@ -1,6 +1,7 @@
 
 * Handle bad Fixes tag
 * Speed up steal feature by remembering last point checked
+* Add Upstream commit tag when cherry picking commits
 
 ------------------
 0.4.0  (2018-10-15)

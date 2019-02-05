@@ -175,14 +175,15 @@ module GitMaintain
 
         # Cherry pick an array of commits
         def cp(opts)
-            if opts[:commits].length > 0 then
-                @repo.runGit("cherry-pick #{opts[:commits].join(" ")}")
+            opts[:commits].each(){|commit|
+                @repo.runGit("cherry-pick #{commit}")
                 if $? != 0 then
                     puts "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
 			        @repo.runSystem("bash")
                     puts "Continuing..."
 		        end
-            end
+		        make_pretty(commit)
+            }
         end
 
         # Steal upstream commits that are not in the branch
