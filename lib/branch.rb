@@ -46,6 +46,8 @@ module GitMaintain
             opts[:do_merge] = false
             opts[:push_force] = false
             opts[:no_travis] = false
+            opts[:all] = false
+            opts[:check_only] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
