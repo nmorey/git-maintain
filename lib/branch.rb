@@ -295,11 +295,12 @@ module GitMaintain
             `rm -f #{msg_path}`
         end
 
-        def is_in_tree?(commit)
-	        fullhash=@repo.runGit("rev-parse #{commit}")
+        def is_in_tree?(commit, src_commit=commit)
+	        fullhash=@repo.runGit("rev-parse --verify --quiet #{commit}")
 	        # This might happen if someone pointed to a commit that doesn't exist in our
 	        # tree.
 	        if $? != 0 then
+                puts "# WARNING: Commit #{src_commit} points to a SHA #{commit} not in tree"
 		        return false
 	        end
 
@@ -335,7 +336,7 @@ module GitMaintain
 	        # If this commit fixes anything, but the broken commit isn't in our branch we don't
 	        # need this commit either.
 	        if fixescmt != "" then
-		          if is_in_tree?(fixescmt) then
+		          if is_in_tree?(fixescmt, commit) then
                       return true
                   else
                       return false
