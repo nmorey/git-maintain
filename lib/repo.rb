@@ -143,11 +143,27 @@ module GitMaintain
                           " <" + runGit("config user.email") +">"
                 mail.puts "To: " + runGit("config patch.target")
                 mail.puts "Date: " + `date -R`.chomp()
-                mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + " " +
-                          (new_tags.length > 1 ?
-                               (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1]) :
-                               new_tags.join(" ")) +
-                          " has been tagged/released"
+
+                if new_tags.length > 4 then
+                    mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + ": new stable releases"
+                    mail.puts ""
+                    mail.puts "These version were tagged/released:\n * " +
+                              new_tags.join("\n * ")
+                    mail.puts ""
+                else
+                    mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + " " +
+                              (new_tags.length > 1 ?
+                                   (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1] + " have ") :
+                                   (new_tags.join(" ") + " has ")) +
+                              " been tagged/released"
+                    mail.puts ""
+                end
+                mail.puts "It's available at the normal places:"
+                mail.puts ""
+                mail.puts "git://github.com/#{@remote_stable}"
+                mail.puts "https://github.com/#{@remote_stable}/releases"
+                mail.puts ""
+                mail.puts "---"
                 mail.puts ""
                 mail.puts "Here's the information from the tags:"
                 new_tags.sort().each(){|tag|
