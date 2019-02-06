@@ -59,6 +59,11 @@ module GitMaintain
             job_id = br["job_ids"].last().to_s()
             return getJson("log_" + job_id, 'jobs/' + job_id + '/log', false)
         end
+        def getTS(sha1, resp)
+            br = findBranch(sha1, resp)
+            raise("Travis build not found") if br == nil
+            return br["started_at"]
+        end
         def checkState(sha1, resp)
             return getState(sha1, resp) == "passed"
         end
@@ -91,6 +96,9 @@ module GitMaintain
         def getValidLog(sha1)
             return getLog(sha1, getBrValidJson())
         end
+        def getValidTS(sha1)
+            return getTS(sha1, getBrValidJson())
+        end
 
         def getStableState(sha1)
             return getState(sha1, getBrStableJson())
@@ -100,6 +108,9 @@ module GitMaintain
         end
         def getStableLog(sha1)
             return getLog(sha1, getBrStableJson())
+        end
+        def getStableTS(sha1)
+            return getTS(sha1, getBrStableJson())
         end
     end
 end
