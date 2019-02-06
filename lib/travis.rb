@@ -112,5 +112,8 @@ module GitMaintain
         def getStableTS(sha1)
             return getTS(sha1, getBrStableJson())
         end
+        def emptyCache()
+            @cachedJson={}
+        end
     end
 end
