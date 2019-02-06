@@ -127,11 +127,11 @@ module GitMaintain
                 branchList = [ Branch::load(repo, opts[:manual_branch], travis, opts[:br_suff]) ]
             end
             branchList.each(){|branch|
-                puts "###############################"
-                puts "# Working on #{branch.verbose_name}"
-                puts "###############################"
-
                 if NO_CHECKOUT_ACTIONS.index(action) == nil  then
+                    puts "###############################"
+                    puts "# Working on #{branch.verbose_name}"
+                    puts "###############################"
+
                     branch.checkout()
                 end
                 branch.send(action, opts)
