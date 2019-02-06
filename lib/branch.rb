@@ -49,6 +49,7 @@ module GitMaintain
             opts[:all] = false
             opts[:check_only] = false
             opts[:no_fetch] = false
+            opts[:watch] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
@@ -74,6 +75,10 @@ module GitMaintain
                 optsParser.banner += "-m <suffix>"
                 optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
                     |val| opts[:do_merge] = val}
+            when :monitor, :monitor_stable
+                optsParser.on("-w", "--watch [PERIOD]", Integer,
+                              "Watch and refresh travis status every <PERIOD>.") {
+                    |val| opts[:watch] = val}
             when :push
                 optsParser.banner += "[-f]"
                 optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
@@ -126,16 +131,23 @@ module GitMaintain
             else
                 branchList = [ Branch::load(repo, opts[:manual_branch], travis, opts[:br_suff]) ]
             end
-            branchList.each(){|branch|
-                if NO_CHECKOUT_ACTIONS.index(action) == nil  then
-                    puts "###############################"
-                    puts "# Working on #{branch.verbose_name}"
-                    puts "###############################"
 
-                    branch.checkout()
-                end
-                branch.send(action, opts)
-            }
+            loop do
+                system("clear; date") if opts[:watch] != false
+                branchList.each(){|branch|
+                    if NO_CHECKOUT_ACTIONS.index(action) == nil  then
+                        puts "###############################"
+                        puts "# Working on #{branch.verbose_name}"
+                        puts "###############################"
+
+                        branch.checkout()
+                    end
+                    branch.send(action, opts)
+                }
+                break if opts[:watch] == false
+                sleep(opts[:watch])
+                travis.emptyCache()
+            end
         end
 
         def initialize(repo, version, travis, branch_suff)

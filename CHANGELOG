@@ -3,6 +3,7 @@
 * Add --no-fetch option
 * Cleanup release email
 * Add build timestamp for running build in monitor
+* Add --watch for monitor and monitor_stable
 
 ------------------
 0.5.0  (2019-02-05)
