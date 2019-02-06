@@ -2,6 +2,7 @@
 * Add --check option for push_stable
 * Add --no-fetch option
 * Cleanup release email
+* Add build timestamp for running build in monitor
 
 ------------------
 0.5.0  (2019-02-05)

@@ -255,7 +255,12 @@ module GitMaintain
         # Monitor the build status on Travis
         def monitor(opts)
             st = @travis.getValidState(head)
-            puts "Status for v#{@version}: " + st
+            suff=""
+            case st
+            when "started"
+                suff= " started at #{@travis.getValidTS(head)}"
+            end
+            puts "Status for v#{@version}: " + st + suff
             if st == "failed"
                 rep = "y"
                 suff=""
