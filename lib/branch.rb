@@ -310,7 +310,13 @@ module GitMaintain
 
          # Monitor the build status of the stable branch on Travis
         def monitor_stable(opts)
-            puts "Status for v#{@version}: " + @travis.getStableState(@stable_head)
+            st = @travis.getStableState(@stable_head)
+            suff=""
+            case st
+            when "started"
+                suff= " started at #{@travis.getStableTS(@stable_head)}"
+            end
+            puts "Status for v#{@version}: " + st + suff
         end
 
         # Reset the branch to the upstream stable one
