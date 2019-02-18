@@ -40,7 +40,7 @@ module GitMaintain
             url = TRAVIS_URL + query
             uri = URI(url)
             log(:INFO, "Querying travis...")
-            log(DEBUG_TRAVIS, url)
+            log(:DEBUG_TRAVIS, url)
             response = fetch(uri)
             raise("Travis request failed '#{url}'") if response.code.to_s() != '200'
 
