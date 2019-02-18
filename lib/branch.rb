@@ -120,10 +120,10 @@ module GitMaintain
                     branch = Branch::load(repo, br, travis, opts[:br_suff])
                     case branch.is_targetted?(opts)
                     when :too_old
-                        puts "# Skipping older v#{branch.version}"
+                        log(:VERBOSE, "Skipping older v#{branch.version}")
                         next
                     when :no_match
-                        puts "# Skipping v#{branch.version} not matching #{opts[:version].to_s()}"
+                        log(:VERBOSE, "Skipping v#{branch.version} not matching #{opts[:version].to_s()}")
                         next
                     end
                     branch
@@ -136,10 +136,7 @@ module GitMaintain
                 system("clear; date") if opts[:watch] != false
                 branchList.each(){|branch|
                     if NO_CHECKOUT_ACTIONS.index(action) == nil  then
-                        puts "###############################"
-                        puts "# Working on #{branch.verbose_name}"
-                        puts "###############################"
-
+                        GitMaintain::log(:INFO, "Working on #{branch.verbose_name}")
                         branch.checkout()
                     end
                     branch.send(action, opts)
@@ -177,6 +174,10 @@ module GitMaintain
         end
         attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head, :verbose_name
 
+        def log(lvl, str)
+            GitMaintain::log(lvl, str)
+        end
+
         def is_targetted?(opts)
             return true if @branch_type == :user_specified
             if @version.to_i < opts[:base_ver] then
@@ -201,9 +202,8 @@ module GitMaintain
             opts[:commits].each(){|commit|
                 @repo.runGit("cherry-pick #{commit}")
                 if $? != 0 then
-                    puts "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue"
-			        @repo.runSystem("bash")
-                    puts "Continuing..."
+                    log(:WARNING, "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue")
+			        @repo.runBash()
 		        end
 		        make_pretty(commit)
             }
@@ -219,8 +219,8 @@ module GitMaintain
                 sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
                 if $? == 0 then
                     base_ref=sha
-                    puts "# INFO: Starting from last successfull run:"
-                    puts "# INFO: " + @repo.runGit("log -n1 --format=oneline #{base_ref}")
+                    log(:VERBOSE, "Starting from last successfull run:")
+                    log(:VERBOSE, @repo.getCommitHeadline(base_ref))
                 end
             end
 
@@ -232,9 +232,9 @@ module GitMaintain
             # can just steal from this point on the next run
             if res == true then
                 @repo.runGit("tag -f 'git-maintain/steal/last/#{@stable_base}' origin/master")
-                puts "# INFO: Marking new last successfull run at:"
-                puts "# INFO: " + @repo.runGit("log -n1 --format=oneline #{master_sha}")
-         end
+                log(:VERBOSE, "Marking new last successfull run at:")
+                log(:VERBOSE, @repo.getCommitHeadline(master_sha))
+            end
         end
 
         # List commits in the branch that are no in the stable branch
@@ -249,12 +249,11 @@ module GitMaintain
             if rep == "y" then
                 @repo.runGit("merge #{merge_branch}")
                 if $? != 0 then
-                    puts "Merge failure. Starting bash for manual fixes. Exit shell to continue"
-			        @repo.runSystem("bash")
-                    puts "Continuing..."
+                    log(:WARNING, "Merge failure. Starting bash for manual fixes. Exit shell to continue")
+			        @repo.runBash()
 		        end
             else
-                puts "Skipping merge"
+                log(:INFO, "Skipping merge")
                 return
             end 
         end
@@ -272,7 +271,7 @@ module GitMaintain
             when "started"
                 suff= " started at #{@travis.getValidTS(head)}"
             end
-            puts "Status for v#{@version}: " + st + suff
+            log(:INFO, "Status for v#{@version}: " + st + suff)
             if st == "failed"
                 rep = "y"
                 suff=""
@@ -296,13 +295,13 @@ module GitMaintain
         def push_stable(opts)
             if (opts[:no_travis] != true && @NO_TRAVIS != true) &&
                @travis.checkValidState(@head) != true then
-                puts "Build is not passed on travis. Skipping push to stable"
+                log(:WARNING, "Build is not passed on travis. Skipping push to stable")
                 return
             end
             c1=@repo.runGit("rev-parse --verify --quiet #{@local_branch}")
             c2=@repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
             if c1 == c2 then
-                puts "Stable is already up-to-date"
+                log(:INFO, "Stable is already up-to-date")
                 return
             end
 
@@ -315,7 +314,7 @@ module GitMaintain
             if rep == "y" then
                 @repo.runGit("push #{@repo.stable_repo} #{@local_branch}:#{@remote_branch}")
             else
-                puts "Skipping push to stable"
+                log(:INFO, "Skipping push to stable")
                 return
             end
         end
@@ -328,7 +327,7 @@ module GitMaintain
             when "started"
                 suff= " started at #{@travis.getStableTS(@stable_head)}"
             end
-            puts "Status for v#{@version}: " + st + suff
+            log(:INFO, "Status for v#{@version}: " + st + suff)
         end
 
         # Reset the branch to the upstream stable one
@@ -337,13 +336,13 @@ module GitMaintain
             if rep == "y" then
                 @repo.runGit("reset --hard #{@remote_ref}")
             else
-                puts "Skipping reset"
+                log(:INFO, "Skipping reset")
                 return
             end
         end
 
         def release(opts)
-            puts "#No release command available for this repo"
+            log(:ERROR,"#No release command available for this repo")
         end
 
         private
@@ -375,7 +374,7 @@ module GitMaintain
 	        # This might happen if someone pointed to a commit that doesn't exist in our
 	        # tree.
 	        if $? != 0 then
-                puts "# WARNING: Commit #{src_commit} points to a SHA #{commit} not in tree"
+                log(:WARNING, "Commit #{src_commit} points to a SHA #{commit} not in tree")
 		        return false
 	        end
 
@@ -467,11 +466,11 @@ module GitMaintain
         def confirm_one(opts, commit)
  		    rep=""
 		    do_cp=false
-		    puts @repo.runGit("show --format=oneline --no-patch --no-decorate #{commit}")
+		    puts @repo.getCommitHeadline(commit)
 		    while rep != "y" do
 			    puts "Do you want to steal this commit ? (y/n/b/?)"
                 if opts[:no] == true then
-                    puts "Auto-replying no due to --no option"
+                    log(:INFO, "Auto-replying no due to --no option")
                     rep = 'n'
                     break
                 else
@@ -479,10 +478,10 @@ module GitMaintain
                 end
 			    case rep
 				when "n"
-			        puts "Skip this commit"
+			        log(:INFO, "Skip this commit")
 					break
 				when "b"
-					puts "Blacklisting this commit for the current branch"
+					LOG(:INFO, "Blacklisting this commit for the current branch")
 					add_blacklist(commit)
 					break
 				when "y"
@@ -492,7 +491,7 @@ module GitMaintain
 				when "?"
 					puts @repo.runGit("show #{commit}")
                 else
-					STDERR.puts "Invalid answer $rep"
+					log(:ERROR, "Invalid answer $rep")
 		            puts @repo.runGit("show --format=oneline --no-patch --no-decorate #{commit}")
                 end
 		    end
@@ -522,8 +521,8 @@ module GitMaintain
 		    # Check if it's not blacklisted by a git-notes
 		    if is_blacklisted?(orig_cmt) == true then
 		        # Commit is blacklisted
-			    puts "Skipping 'blacklisted' commit " +
-                     @repo.runGit("show --format=oneline --no-patch --no-decorate #{orig_cmt}")
+			    log(:INFO, "Skipping 'blacklisted' commit " +
+                     @repo.runGit("log --format=oneline --no-patch --no-decorate #{orig_cmt}"))
                 return true
 		    end
 
@@ -533,7 +532,7 @@ module GitMaintain
             begin
 		        pick_one(commit)
             rescue CherryPickErrorException => e
-			    puts "Cherry pick failed. Fix, commit (or reset) and exit."
+			    log(:WARNING, "Cherry pick failed. Fix, commit (or reset) and exit.")
 			    @repo.runSystem("/bin/bash")
                 return false
             end
@@ -543,7 +542,7 @@ module GitMaintain
 		    if orig_cmt == "" then
 			    msg="Custom"
 			    orig_cmt=@repo.runGit("rev-parse HEAD")
-			    puts "Custom commit, please double-check!"
+			    log(:WARNING, "Custom commit, please double-check!")
 			    @repo.runSystem("/bin/bash")
 		    end
 		    make_pretty(orig_cmt, msg)

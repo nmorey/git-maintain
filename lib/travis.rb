@@ -15,6 +15,10 @@ module GitMaintain
         end
 
         private
+        def log(lvl, str)
+            GitMaintain::log(lvl, str)
+        end
+
         def fetch(uri_str, limit = 10)
             # You should choose a better exception.
             raise ArgumentError, 'too many HTTP redirects' if limit == 0
@@ -35,8 +39,8 @@ module GitMaintain
             return @cachedJson[query_label] if @cachedJson[query_label] != nil
             url = TRAVIS_URL + query
             uri = URI(url)
-            puts "# Querying travis..."
-            puts "# #{url}" if ENV["DEBUG_TRAVIS"].to_s() != ""
+            log(:INFO, "Querying travis...")
+            log(DEBUG_TRAVIS, url)
             response = fetch(uri)
             raise("Travis request failed '#{url}'") if response.code.to_s() != '200'
 
@@ -75,11 +79,11 @@ module GitMaintain
             return getJson(:br_stable, 'repos/' + @repo.remote_stable + '/branches')
         end
         def findBranch(sha1, resp)
-            puts "# Looking for build for #{sha1}" if ENV["DEBUG_TRAVIS"].to_s() != ""
+            log(:DEBUG_TRAVIS, "Looking for build for #{sha1}")
             resp["branches"].each(){|br|
                 commit=resp["commits"].select(){|e| e["id"] == br["commit_id"]}.first()
                 raise("Incomplete JSON received from Travis") if commit == nil
-                puts "# Found entry for sha #{commit["sha"]}" if ENV["DEBUG_TRAVIS"].to_s() != ""
+                log(:DEBUG_TRAVIS, "Found entry for sha #{commit["sha"]}")
                 next if commit["sha"] != sha1
                 return br
             }

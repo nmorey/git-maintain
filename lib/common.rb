@@ -6,6 +6,39 @@ require 'branch'
 
 $LOAD_PATH.pop()
 
+class String
+    # colorization
+    @@is_a_tty = nil
+    def colorize(color_code)
+        @@is_a_tty = STDOUT.isatty() if @@is_a_tty == nil
+        if @@is_a_tty then
+            return "\e[#{color_code}m#{self}\e[0m"
+        else
+            return self
+        end
+    end
+
+    def red
+        colorize(31)
+    end
+
+    def green
+        colorize(32)
+    end
+
+    def brown
+        colorize(33)
+    end
+
+    def blue
+        colorize(34)
+    end
+
+    def magenta
+        colorize(35)
+    end
+end
+
 module GitMaintain
     class Common
         ACTION_LIST = [ :list_actions ]
@@ -17,6 +50,8 @@ module GitMaintain
 
     ACTION_CLASS = [ Common, Branch, Repo ]
     @@custom_classes = {}
+
+    @@verbose_log = false
 
     def registerCustom(repo_name, classes)
         raise("Multiple class for repo #{repo_name}") if @@custom_classes[repo_name] != nil
@@ -32,10 +67,10 @@ module GitMaintain
     def loadClass(default_class, repo_name, *more)
         custom = @@custom_classes[repo_name]
         if custom != nil && custom[default_class] != nil then
-            puts "# Detected custom #{default_class} class for repo '#{repo_name}'" if ENV['DEBUG'] == "1"
+            log(:DEBUG,"Detected custom #{default_class} class for repo '#{repo_name}'")
             return custom[default_class].new(*more)
         else
-            puts "# Detected NO custom #{default_class} classes for repo '#{repo_name}'" if ENV['DEBUG'] == "1"
+            log(:DEBUG,"Detected NO custom #{default_class} classes for repo '#{repo_name}'")
             return default_class.new(*more)
         end
     end
@@ -110,6 +145,35 @@ module GitMaintain
     end
     module_function :checkLog
 
+    def _log(lvl, str, out=STDOUT)
+        puts("# " + lvl.to_s() + ": " + str)
+    end
+    module_function :_log
+
+    def log(lvl, str)
+        case lvl
+        when :DEBUG
+            _log("DEBUG".magenta(), str) if ENV["DEBUG"].to_s() != ""
+        when :DEBUG_TRAVIS
+            _log("DEBUG_TRAVIS".magenta(), str) if ENV["DEBUG_TRAVIS"].to_s() != ""
+        when :VERBOSE
+            _log("INFO".blue(), str) if @@verbose_log == true
+        when :INFO
+            _log("INFO".green(), str)
+        when :WARNING
+            _log("WARNING".brown(), str)
+        when :ERROR
+            _log("ERROR".red(), str, STDERR)
+        else
+            _log(lvl, str)
+        end
+    end
+    module_function :log
+
+    def setVerbose(val)
+        @@verbose_log = val
+    end
+    module_function :setVerbose
 end
 $LOAD_PATH.pop()
 

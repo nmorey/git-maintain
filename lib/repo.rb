@@ -67,6 +67,10 @@ module GitMaintain
         end
         attr_reader :path, :remote_valid, :remote_stable, :valid_repo, :stable_repo
 
+        def log(lvl, str)
+            GitMaintain::log(lvl, str)
+        end
+
         def run(cmd)
             return `cd #{@path} && #{cmd}`
         end
@@ -74,10 +78,8 @@ module GitMaintain
             return system("cd #{@path} && #{cmd}")
         end
         def runGit(cmd)
-            if ENV["DEBUG"].to_s() != "" then
-                puts "Called from #{caller[1]}"
-                puts "Running git command '#{cmd}'"
-            end
+            log(:DEBUG, "Called from #{caller[1]}")
+            log(:DEBUG, "Running git command '#{cmd}'")
             return `git --work-tree=#{@path} #{cmd}`.chomp()
         end
         def runGitImap(cmd)
@@ -90,8 +92,22 @@ module GitMaintain
                   fi; git --work-tree=#{@path} imap-send #{cmd}`
         end
 
+        def runBash()
+            runSystem("bash")
+            if $? == 0 then
+                log(:INFO, "Continuing...")
+            else
+                log(:ERROR, "Shell exited with code #{$?}. Exiting")
+                raise("Cancelled by user")
+            end
+        end
+
+        def getCommitHeadline(sha)
+            return runGit("show --format=oneline --no-patch --no-decorate #{sha}")
+        end
+
         def stableUpdate()
-            puts "# Fetching stable updates..."
+            log(:VERBOSE, "Fetching stable updates...")
             runGit("fetch #{@stable_repo}")
         end
         def getStableList(br_suff)
@@ -125,11 +141,11 @@ module GitMaintain
 
             new_tags = local_tags - remote_tags
             if new_tags.empty? then
-                puts "All tags are already submitted."
+                log(:INFO,  "All tags are already submitted.")
                 return
             end
 
-            puts "This will officially release these tags: #{new_tags.join(", ")}"
+            log(:WARNING, "This will officially release these tags: #{new_tags.join(", ")}")
             rep = GitMaintain::confirm(opts, "release them")
             if rep != 'y' then
                 raise "Aborting.."
@@ -179,7 +195,7 @@ module GitMaintain
                 puts runGitImap("< #{mail_path}; rm -f #{mail_path}")
             end
 
-            puts "Last chance to cancel before submitting"
+            log(:WARNING, "Last chance to cancel before submitting")
             rep= GitMaintain::confirm(opts, "submit these releases")
             if rep != 'y' then
                 raise "Aborting.."

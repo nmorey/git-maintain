@@ -45,6 +45,8 @@ optsParser.on("-b", "--branch-suffix [SUFFIX]", "Branch suffix. Default is 'mast
     |val| opts[:br_suff] = val}
 optsParser.on("-n", "--no", "Assume no to all questions.") {
     |val| opts[:no] = true}
+optsParser.on("--verbose", "Displays more informations.") {
+    |val| GitMaintain::setVerbose(true)}
 GitMaintain::setOpts(action, optsParser, opts)
 
 rest = optsParser.order!(ARGV);
