@@ -220,7 +220,7 @@ module GitMaintain
                 if $? == 0 then
                     base_ref=sha
                     puts "# INFO: Starting from last successfull run:"
-                    puts "# INFO: " + @repo.runGit("show --format=oneline #{base_ref}")
+                    puts "# INFO: " + @repo.runGit("log -n1 --format=oneline #{base_ref}")
                 end
             end
 
@@ -233,7 +233,7 @@ module GitMaintain
             if res == true then
                 @repo.runGit("tag -f 'git-maintain/steal/last/#{@stable_base}' origin/master")
                 puts "# INFO: Marking new last successfull run at:"
-                puts "# INFO: " + @repo.runGit("show --format=oneline #{master_sha}")
+                puts "# INFO: " + @repo.runGit("log -n1 --format=oneline #{master_sha}")
          end
         end
 

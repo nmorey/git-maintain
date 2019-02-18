@@ -4,6 +4,7 @@
 * Cleanup release email
 * Add build timestamp for running build in monitor
 * Add --watch for monitor and monitor_stable
+* Fix bad output ot git maintain steal
 
 ------------------
 0.5.0  (2019-02-05)
