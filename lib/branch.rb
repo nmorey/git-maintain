@@ -76,7 +76,7 @@ module GitMaintain
                 optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
                     |val| opts[:do_merge] = val}
             when :monitor, :monitor_stable
-                optsParser.on("-w", "--watch [PERIOD]", Integer,
+                optsParser.on("-w", "--watch <PERIOD>", Integer,
                               "Watch and refresh travis status every <PERIOD>.") {
                     |val| opts[:watch] = val}
             when :push
