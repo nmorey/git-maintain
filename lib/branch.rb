@@ -202,6 +202,7 @@ module GitMaintain
         def cp(opts)
             opts[:commits].each(){|commit|
                 @repo.runGit("cherry-pick #{commit}")
+                log(:INFO, "Applying #{@repo.getCommitHeadline(commit)}")
                 if $? != 0 then
                     log(:WARNING, "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue")
 			        @repo.runBash()
