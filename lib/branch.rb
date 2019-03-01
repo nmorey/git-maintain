@@ -10,8 +10,8 @@ module GitMaintain
 
     class Branch
         ACTION_LIST = [
-            :cp, :steal, :list, :merge,
-            :push, :monitor,
+            :cp, :steal, :list, :list_stable,
+            :merge, :push, :monitor,
             :push_stable, :monitor_stable,
             :release, :reset
         ]
@@ -19,12 +19,13 @@ module GitMaintain
             :cp, :merge, :monitor, :release
         ]
         NO_CHECKOUT_ACTIONS = [
-            :list, :push, :monitor, :monitor_stable
+            :list, :list_stable, :push, :monitor, :monitor_stable
         ]
         ACTION_HELP = [
             "* cp: Backport commits and eventually push them to github",
             "* steal: Steal commit from upstream that fixes commit in the branch or were tagged as stable",
             "* list: List commit present in the branch but not in the stable branch",
+            "* list_stable: List commit present in the stable branch but not in the latest associated relase",
             "* merge: Merge branch with suffix specified in -m <suff> into the main branch",
             "* push: Push branches to github for validation",
             "* monitor: Check the travis state of all branches",
@@ -243,6 +244,12 @@ module GitMaintain
         def list(opts)
             GitMaintain::log(:INFO, "Working on #{@verbose_name}")
             GitMaintain::checkLog(opts, @local_branch, @remote_ref, nil)
+        end
+
+        # List commits in the stable_branch that are no in the latest release
+        def list_stable(opts)
+            GitMaintain::log(:INFO, "Working on #{@verbose_name}")
+            GitMaintain::checkLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"), nil)
         end
 
         # Merge merge_branch into this one

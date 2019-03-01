@@ -6,6 +6,7 @@
 * Add --watch for monitor and monitor_stable
 * Fix bad output ot git maintain steal
 * Rewrite log system and handle colors
+* Add list_stable command
 
 ------------------
 0.5.0  (2019-02-05)
