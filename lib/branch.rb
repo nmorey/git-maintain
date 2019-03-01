@@ -522,7 +522,7 @@ module GitMaintain
 		    if is_blacklisted?(orig_cmt) == true then
 		        # Commit is blacklisted
 			    log(:INFO, "Skipping 'blacklisted' commit " +
-                     @repo.runGit("log --format=oneline --no-patch --no-decorate #{orig_cmt}"))
+                     @repo.getCommitHeadline(orig_cmt))
                 return true
 		    end
 
