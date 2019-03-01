@@ -120,10 +120,11 @@ module GitMaintain
                     branch = Branch::load(repo, br, travis, opts[:br_suff])
                     case branch.is_targetted?(opts)
                     when :too_old
-                        log(:VERBOSE, "Skipping older v#{branch.version}")
+                        GitMaintain::log(:VERBOSE, "Skipping older v#{branch.version}")
                         next
                     when :no_match
-                        log(:VERBOSE, "Skipping v#{branch.version} not matching #{opts[:version].to_s()}")
+                        GitMaintain::log(:VERBOSE, "Skipping v#{branch.version} not matching" +
+                                                   opts[:version].to_s())
                         next
                     end
                     branch
