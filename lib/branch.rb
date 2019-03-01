@@ -241,7 +241,8 @@ module GitMaintain
 
         # List commits in the branch that are no in the stable branch
         def list(opts)
-         GitMaintain::checkLog(opts, @local_branch, @remote_ref, nil)
+            GitMaintain::log(:INFO, "Working on #{@verbose_name}")
+            GitMaintain::checkLog(opts, @local_branch, @remote_ref, nil)
         end
 
         # Merge merge_branch into this one
