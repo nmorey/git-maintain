@@ -40,7 +40,7 @@ module GitMaintain
             GitMaintain::checkDirectConstructor(self.class)
 
             @path = path
-            @stable_list=nil
+            @branch_list=nil
             @stable_branches=nil
             @suffix_list=nil
 
@@ -110,15 +110,15 @@ module GitMaintain
             log(:VERBOSE, "Fetching stable updates...")
             runGit("fetch #{@stable_repo}")
         end
-        def getStableList(br_suff)
-            return @stable_list if @stable_list != nil
+        def getBranchList(br_suff)
+            return @branch_list if @branch_list != nil
 
-            @stable_list=runGit("branch").split("\n").map(){|x|
+            @branch_list=runGit("branch").split("\n").map(){|x|
                 x=~ /dev\/stable-v[0-9]+\/#{br_suff}/ ?
                     x.gsub(/\*?\s*dev\/stable-v([0-9]+)\/#{br_suff}\s*$/, '\1') :
                     nil}.compact().uniq()
 
-            return @stable_list
+            return @branch_list
         end
 
         def getSuffixList()
@@ -210,7 +210,7 @@ module GitMaintain
         end
 
         def list_branches(opts)
-            puts getStableList(opts[:br_suff])
+            puts getBranchList(opts[:br_suff])
         end
         def list_suffixes(opts)
             puts getSuffixList()

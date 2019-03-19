@@ -117,7 +117,7 @@ module GitMaintain
 
             branchList=[]
             if opts[:manual_branch] == nil then
-                branchList = repo.getStableList(opts[:br_suff]).map(){|br|
+                branchList = repo.getBranchList(opts[:br_suff]).map(){|br|
                     branch = Branch::load(repo, br, travis, opts[:br_suff])
                     case branch.is_targetted?(opts)
                     when :too_old
