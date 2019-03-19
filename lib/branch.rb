@@ -202,13 +202,18 @@ module GitMaintain
         # Cherry pick an array of commits
         def cp(opts)
             opts[:commits].each(){|commit|
-                @repo.runGit("cherry-pick #{commit}")
+                prev_head=@repo.runGit("rev-parse HEAD")
                 log(:INFO, "Applying #{@repo.getCommitHeadline(commit)}")
+                @repo.runGit("cherry-pick #{commit}")
                 if $? != 0 then
                     log(:WARNING, "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue")
 			        @repo.runBash()
 		        end
-		        make_pretty(commit)
+                new_head=@repo.runGit("rev-parse HEAD")
+                # Do not make commit pretty if it was not applied
+                if new_head != prev_head
+		            make_pretty(commit)
+                end
             }
         end
 
@@ -539,13 +544,15 @@ module GitMaintain
             do_cp = confirm_one(opts, orig_cmt)
             return false if do_cp != true
 
+            prev_head=@repo.runGit("rev-parse HEAD")
+
             begin
 		        pick_one(commit)
             rescue CherryPickErrorException => e
 			    log(:WARNING, "Cherry pick failed. Fix, commit (or reset) and exit.")
 			    @repo.runSystem("/bin/bash")
-                return false
             end
+            new_head=@repo.runGit("rev-parse HEAD")
 
 		    # If we didn't find the commit upstream then this must be a custom commit
 		    # in the given tree - make sure the user checks this commit.
@@ -555,7 +562,9 @@ module GitMaintain
 			    log(:WARNING, "Custom commit, please double-check!")
 			    @repo.runSystem("/bin/bash")
 		    end
-		    make_pretty(orig_cmt, msg)
+            if new_head != prev_head
+		        make_pretty(orig_cmt, msg)
+            end
         end
 
         def steal_all(opts, range)
