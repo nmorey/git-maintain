@@ -8,6 +8,7 @@
 * Rewrite log system and handle colors
 * Add list_stable command
 * Rework branching constraints to support more flexible names
+* Add create command to create missing local branches
 
 ------------------
 0.5.0  (2019-02-05)

@@ -9,8 +9,10 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 # Command summary
 
 - **cp**: Backport commits and eventually push them to github
+- **create**: Create missing local branches from all the stable branches
 - **steal**: Steal commit from upstream that fixes commit in the branch or were tagged as stable
 - **list**: List commit present in the branch but not in the stable branch
+- **list_stable**: List commit present in the stable branch but not in the latest associated relase
 - **merge**: Merge branch with suffix specified in -m <suff> into the main branch
 - **push**: Push branches to github for validation
 - **monitor**: Check the travis state of all branches
@@ -116,6 +118,10 @@ v\1
 
 Note that this value can be overriden by the stable-base.XXX value if needed
 
+Also, once you set these parameters, you can have git-maintain create all branches for you by running
+``
+$ git maintain create
+```
 ## Day-to-day workflow
 
 Watch the mailing-lists (and/or github and/or the upstream branches) for patches that are tagged for maintainance.

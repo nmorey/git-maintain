@@ -13,16 +13,20 @@ module GitMaintain
             :cp, :steal, :list, :list_stable,
             :merge, :push, :monitor,
             :push_stable, :monitor_stable,
-            :release, :reset
+            :release, :reset, :create
         ]
         NO_FETCH_ACTIONS = [
             :cp, :merge, :monitor, :release
         ]
         NO_CHECKOUT_ACTIONS = [
-            :list, :list_stable, :push, :monitor, :monitor_stable
+            :create, :list, :list_stable, :push, :monitor, :monitor_stable
+        ]
+        ALL_BRANCHES_ACTIONS = [
+            :create
         ]
         ACTION_HELP = [
             "* cp: Backport commits and eventually push them to github",
+            "* create: Create missing local branches from all the stable branches",
             "* steal: Steal commit from upstream that fixes commit in the branch or were tagged as stable",
             "* list: List commit present in the branch but not in the stable branch",
             "* list_stable: List commit present in the stable branch but not in the latest associated relase",
@@ -57,7 +61,7 @@ module GitMaintain
             optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
                 |val| opts[:version] = val}
 
-            if action != :merge
+            if action != :merge && ALL_BRANCHES_ACTIONS.index(action) == nil
                 optsParser.on("-B", "--manual-branch <branch name>", "Work on a specific (non-stable) branch.") {
                     |val| opts[:manual_branch] = val}
             end
@@ -117,7 +121,13 @@ module GitMaintain
 
             branchList=[]
             if opts[:manual_branch] == nil then
-                branchList = repo.getBranchList(opts[:br_suff]).map(){|br|
+                unfilteredList = nil
+                if ALL_BRANCHES_ACTIONS.index(action) != nil then
+                    unfilteredList = repo.getStableBranchList()
+                else
+                    unfilteredList = repo.getBranchList(opts[:br_suff])
+                end
+                branchList = unfilteredList.map(){|br|
                     branch = Branch::load(repo, br, travis, opts[:br_suff])
                     case branch.is_targetted?(opts)
                     when :too_old
@@ -168,12 +178,13 @@ module GitMaintain
                 @verbose_name = version
             end
 
-            @head          = @repo.runGit("rev-parse #{@local_branch}")
+            @head          = @repo.runGit("rev-parse --verify --quiet #{@local_branch}")
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
-            @stable_head   = @repo.runGit("rev-parse #{@remote_ref}")
+            @stable_head   = @repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
             @stable_base   = @repo.findStableBase(@local_branch)
         end
-        attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head, :verbose_name
+        attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head,
+                    :verbose_name, :exists
 
         def log(lvl, str)
             GitMaintain::log(lvl, str)
@@ -381,6 +392,12 @@ module GitMaintain
 
         def release(opts)
             log(:ERROR,"#No release command available for this repo")
+        end
+
+        def create(opts)
+            return if @head != ""
+            log(:INFO, "Creating missing #{@local_branch} from #{@remote_ref}")
+            @repo.runGit("branch #{@local_branch} #{@remote_ref}")
         end
 
         private
