@@ -275,6 +275,11 @@ module GitMaintain
 
         # Push the branch to the validation repo
         def push(opts)
+            if same_sha?(@local_branch, @repo.valid_repo + "/" + @local_branch) then
+                log(:INFO, "Nothing to push")
+                return
+            end
+
            @repo.runGit("push #{opts[:push_force] == true ? "-f" : ""} #{@repo.valid_repo} #{@local_branch}")
         end
 
