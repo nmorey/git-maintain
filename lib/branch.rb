@@ -554,7 +554,7 @@ module GitMaintain
 			        log(:INFO, "Skip this commit")
 					break
 				when "b"
-					LOG(:INFO, "Blacklisting this commit for the current branch")
+					log(:INFO, "Blacklisting this commit for the current branch")
 					add_blacklist(commit)
 					break
 				when "y"
