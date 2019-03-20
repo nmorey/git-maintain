@@ -580,5 +580,12 @@ module GitMaintain
             }
             return res
        end
+
+        def same_sha?(ref1, ref2)
+            c1=@repo.runGit("rev-parse --verify --quiet #{ref1}")
+            c2=@repo.runGit("rev-parse --verify --quiet #{ref2}")
+            return c1 == c2
+
+        end
     end
 end
