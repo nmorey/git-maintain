@@ -90,6 +90,32 @@ stable-base.dev---stable-v15 v15
 ```
 This will allow 'git maintain steal' to figure out what should be backported in the stable branches.
 
+
+You know can use a regexp for dealing with branch names that extends with version
+ without any changes to your .gitconfig
+
+Configure your local branch name space that also extracts the version:
+```
+$ git config --get maintain.branch-format
+dev\/stable-v([0-9]*)
+```
+
+Configure the upstream stable branches. Use ruby regexp value extraction (\\1) so git-maintain
+cal automatically insert the right version number
+```
+$ git config --get maintain.stable-branch-format
+stable-v\1
+
+```
+Finally configure the upstream fork points for stable branches so the `steal` commands know where to start from
+```
+$ git config --get maintain.stable-base-format
+v\1
+
+```
+
+Note that this value can be overriden by the stable-base.XXX value if needed
+
 ## Day-to-day workflow
 
 Watch the mailing-lists (and/or github and/or the upstream branches) for patches that are tagged for maintainance.

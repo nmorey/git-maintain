@@ -158,8 +158,8 @@ module GitMaintain
             @branch_suff   = branch_suff
 
             if version =~ /^[0-9]+$/
-                @local_branch  = "dev/stable-v#{@version}/#{@branch_suff}"
-                @remote_branch ="stable-v#{@version}"
+                @local_branch  = @repo.versionToLocalBranch(@version, @branch_suff)
+                @remote_branch = @repo.versionToStableBranch(@version)
                 @branch_type = :std
                 @verbose_name = "v"+version
             else
@@ -172,7 +172,6 @@ module GitMaintain
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
             @stable_head   = @repo.runGit("rev-parse #{@remote_ref}")
             @stable_base   = @repo.findStableBase(@local_branch)
-
         end
         attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head, :verbose_name
 
@@ -259,7 +258,7 @@ module GitMaintain
 
         # Merge merge_branch into this one
         def merge(opts)
-            merge_branch = "dev/stable-v#{@version}/#{opts[:do_merge]}"
+            merge_branch = @repo.versionToLocalBranch(@version, opts[:do_merge])
             rep = GitMaintain::checkLog(opts, merge_branch, @local_branch, "merge")
             if rep == "y" then
                 @repo.runGit("merge #{merge_branch}")

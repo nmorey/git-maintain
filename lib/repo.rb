@@ -57,13 +57,19 @@ module GitMaintain
                                 awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
             @remote_stable=runGit("remote -v | egrep '^#{@stable_repo}' | grep fetch |
                                       awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
+
+            @branch_format_raw = runGit("config maintain.branch-format 2> /dev/null").chomp()
+            @branch_format = Regexp.new(/#{@branch_format_raw}/)
+            @stable_branch_format = runGit("config maintain.stable-branch-format 2> /dev/null").chomp()
+            @stable_base_format = runGit("config maintain.stable-base-format 2> /dev/null").chomp()
+
             @stable_base_patterns=
                 runGit("config --get-regexp   stable-base | egrep '^stable-base\.' | "+
                        "sed -e 's/stable-base\.//' -e 's/---/\\//g'").split("\n").inject({}){ |m, x|
                 y=x.split(" ");
                 m[y[0]] = y[1]
                 m
-                }
+            }
         end
         attr_reader :path, :remote_valid, :remote_stable, :valid_repo, :stable_repo
 
@@ -114,9 +120,9 @@ module GitMaintain
             return @branch_list if @branch_list != nil
 
             @branch_list=runGit("branch").split("\n").map(){|x|
-                x=~ /dev\/stable-v[0-9]+\/#{br_suff}/ ?
-                    x.gsub(/\*?\s*dev\/stable-v([0-9]+)\/#{br_suff}\s*$/, '\1') :
-                    nil}.compact().uniq()
+                x=~ /#{@branch_format_raw}\/#{br_suff}$/ ? 
+                    $1 : nil
+            }.compact().uniq()
 
             return @branch_list
         end
@@ -125,9 +131,10 @@ module GitMaintain
             return @suffix_list if @suffix_list != nil
 
             @suffix_list = runGit("branch").split("\n").map(){|x|
-                x=~ /dev\/stable-v[0-9]+\/[a-zA-Z0-9_-]+/ ?
-                    x.gsub(/\*?\s*dev\/stable-v[0-9]+\/([a-zA-Z0-9_-]+)\s*$/, '\1') :
-                    nil}.compact().uniq()
+                x=~ @branch_format ? 
+                    /^\*?\s*#{@branch_format_raw}\/([a-zA-Z0-9_-]+)\s*$/.match(x)[-1] :
+                    nil
+            }.compact().uniq()
 
             return @suffix_list
         end
@@ -202,11 +209,30 @@ module GitMaintain
             end
             puts `#{@@SUBMIT_BINARY}`
         end
+
+        def versionToLocalBranch(version, suff)
+            return @branch_format_raw.gsub(/\\\//, '/').
+                gsub(/\(.*\)/, version) + "/#{suff}"
+        end
+
+        def versionToStableBranch(version)
+            return version.gsub(/^(.*)$/, @stable_branch_format)
+        end
+
         def findStableBase(branch)
-            @stable_base_patterns.each(){|pattern, base|
-                return base if branch =~ /#{pattern}\// || branch =~ /#{pattern}$/
+            base=nil
+            if branch =~ @branch_format then
+                base = branch.gsub(/^\*?\s*#{@branch_format_raw}\/.*$/, @stable_base_format)
+            end
+
+            @stable_base_patterns.each(){|pattern, b|
+                if branch =~ /#{pattern}\// || branch =~ /#{pattern}$/
+                    base = b
+                    break
+                end
             }
-            raise("Could not a find a stable base for branch #{branch}")
+            raise("Could not a find a stable base for branch #{branch}") if base == nil
+            return base
         end
 
         def list_branches(opts)
