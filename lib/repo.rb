@@ -127,6 +127,17 @@ module GitMaintain
             return @branch_list
         end
 
+        def getStableBranchList()
+            return @stable_branches if @stable_branches != nil
+
+            @stable_branches=runGit("branch -a").split("\n").map(){|x|
+                x=~ /remotes\/#{@@STABLE_REPO}\/#{@stable_branch_format.gsub(/\\1/, '([0-9]+)')}$/ ?
+                    $1 : nil
+            }.compact().uniq()
+
+            return @stable_branches
+        end
+
         def getSuffixList()
             return @suffix_list if @suffix_list != nil
 
