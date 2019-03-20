@@ -263,7 +263,7 @@ module GitMaintain
             return alts if $? != 0
 
             branches = getStableBranchList().map(){|v| @@STABLE_REPO + "/" + versionToStableBranch(v)}
-            p branches
+
             runGit("log -F --grep \"$#{subj}\" --format=\"%H\" #{branches.join(" ")}").
                 split("\n").each(){|c|
                 next if c == commit
