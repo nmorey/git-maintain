@@ -10,6 +10,7 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 
 - **cp**: Backport commits and eventually push them to github
 - **create**: Create missing local branches from all the stable branches
+- **delete**: Delete all local branches using the suffix
 - **steal**: Steal commit from upstream that fixes commit in the branch or were tagged as stable
 - **list**: List commit present in the branch but not in the stable branch
 - **list_stable**: List commit present in the stable branch but not in the latest associated relase

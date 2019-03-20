@@ -9,6 +9,7 @@
 * Add list_stable command
 * Rework branching constraints to support more flexible names
 * Add create command to create missing local branches
+* Add delete command to remove temporary working branches
 
 ------------------
 0.5.0  (2019-02-05)

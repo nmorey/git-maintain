@@ -13,13 +13,13 @@ module GitMaintain
             :cp, :steal, :list, :list_stable,
             :merge, :push, :monitor,
             :push_stable, :monitor_stable,
-            :release, :reset, :create
+            :release, :reset, :create, :delete
         ]
         NO_FETCH_ACTIONS = [
-            :cp, :merge, :monitor, :release
+            :cp, :merge, :monitor, :release, :delete
         ]
         NO_CHECKOUT_ACTIONS = [
-            :create, :list, :list_stable, :push, :monitor, :monitor_stable
+            :create, :delete, :list, :list_stable, :push, :monitor, :monitor_stable
         ]
         ALL_BRANCHES_ACTIONS = [
             :create
@@ -27,6 +27,7 @@ module GitMaintain
         ACTION_HELP = [
             "* cp: Backport commits and eventually push them to github",
             "* create: Create missing local branches from all the stable branches",
+            "* delete: Delete all local branches using the suffix",
             "* steal: Steal commit from upstream that fixes commit in the branch or were tagged as stable",
             "* list: List commit present in the branch but not in the stable branch",
             "* list_stable: List commit present in the stable branch but not in the latest associated relase",
@@ -61,7 +62,9 @@ module GitMaintain
             optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
                 |val| opts[:version] = val}
 
-            if action != :merge && ALL_BRANCHES_ACTIONS.index(action) == nil
+            if  ALL_BRANCHES_ACTIONS.index(action) == nil &&
+                action != :merge &&
+                action != :delete then
                 optsParser.on("-B", "--manual-branch <branch name>", "Work on a specific (non-stable) branch.") {
                     |val| opts[:manual_branch] = val}
             end
@@ -107,6 +110,11 @@ module GitMaintain
                opts[:action] == :release then
                 if opts[:br_suff] != "master" then
                     raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
+                end
+            end
+            if opts[:action] == :delete then
+                if opts[:br_suff] == "master" then
+                    raise "Action #{opts[:action]} can NOT be done on 'master' suffixed branches"
                 end
             end
         end
@@ -398,6 +406,16 @@ module GitMaintain
             return if @head != ""
             log(:INFO, "Creating missing #{@local_branch} from #{@remote_ref}")
             @repo.runGit("branch #{@local_branch} #{@remote_ref}")
+        end
+
+        def delete(opts)
+            rep = GitMaintain::confirm(opts, "delete branch #{@local_branch}")
+            if rep == "y" then
+                @repo.runGit("branch -D #{@local_branch}")
+            else
+                log(:INFO, "Skipping deletion")
+                return
+            end
         end
 
         private
