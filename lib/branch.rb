@@ -514,24 +514,23 @@ module GitMaintain
         def pick_one(commit)
             @repo.runGit("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
 	        return if  $? == 0
-
-		    if [ @repo.runGit("status -uno --porcelain | wc -l") != 0 ]; then
+            if @repo.runGit("status -uno --porcelain | wc -l") == "0" then
 			    @repo.runGit("reset --hard")
-			    return
+                raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
 		    end
 		    @repo.runGit("reset --hard")
 		    # That didn't work? Let's try that with every variation of the commit
 		    # in other stable trees.
-            find_alts(commit).each(){|alt_commit|
-			    @repo.runCmd("cherry-pick --strategy=recursive -Xpatience -x #{alt_commit} &> /dev/null")
+            @repo.find_alts(commit).each(){|alt_commit|
+			    @repo.runGit("cherry-pick --strategy=recursive -Xpatience -x #{alt_commit} &> /dev/null")
 			    if $? == 0 then
 				    return
 			    end
-			    @repo.runCmd("reset --hard")
+			    @repo.runGit("reset --hard")
             }
 		    # Still no? Let's go back to the original commit and hand it off to
 		    # the user.
-		    @repo.runCmd("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
+		    @repo.runGit("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
             raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
 	        return false
         end

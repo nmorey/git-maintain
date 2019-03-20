@@ -255,5 +255,23 @@ module GitMaintain
         def submit_release(opts)
             submitReleases(opts)
         end
+
+        def find_alts(commit)
+            alts=[]
+
+            subj=runGit("log -1 --pretty='%s' #{commit}")
+            return alts if $? != 0
+
+            branches = getStableBranchList().map(){|v| @@STABLE_REPO + "/" + versionToStableBranch(v)}
+            p branches
+            runGit("log -F --grep \"$#{subj}\" --format=\"%H\" #{branches.join(" ")}").
+                split("\n").each(){|c|
+                next if c == commit
+                cursubj=runGit("log -1 --pretty='%s' #{c}")
+                alts << c if subj == cursubj
+            }
+
+            return alts
+        end
     end
 end
