@@ -259,6 +259,21 @@ module GitMaintain
         # Merge merge_branch into this one
         def merge(opts)
             merge_branch = @repo.versionToLocalBranch(@version, opts[:do_merge])
+
+            # Make sure branch exists
+            hash_to_merge = @repo.runGit("rev-parse --verify --quiet #{merge_branch}")
+            if $? != 0 then
+                log(:INFO, "Branch #{merge_branch} does not exists. Skipping...")
+                return
+            end
+
+            # See if there is anything worth merging
+            merge_base_hash = @repo.runGit("merge-base #{merge_branch} #{@local_branch}")
+            if merge_base_hash == hash_to_merge then
+                log(:INFO, "Branch #{merge_branch} has no commit that needs to be merged")
+                return
+            end
+
             rep = GitMaintain::checkLog(opts, merge_branch, @local_branch, "merge")
             if rep == "y" then
                 @repo.runGit("merge #{merge_branch}")
