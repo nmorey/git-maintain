@@ -1,3 +1,7 @@
+------------------
+0.6.0  (2019-03-21)
+------------------
+
 * Speed up push_stable
 * Add --check option for push_stable
 * Add --no-fetch option
