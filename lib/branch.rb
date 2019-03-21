@@ -266,13 +266,13 @@ module GitMaintain
         # List commits in the branch that are no in the stable branch
         def list(opts)
             GitMaintain::log(:INFO, "Working on #{@verbose_name}")
-            GitMaintain::checkLog(opts, @local_branch, @remote_ref, nil)
+            GitMaintain::showLog(opts, @local_branch, @remote_ref)
         end
 
         # List commits in the stable_branch that are no in the latest release
         def list_stable(opts)
             GitMaintain::log(:INFO, "Working on #{@verbose_name}")
-            GitMaintain::checkLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"), nil)
+            GitMaintain::showLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"))
         end
 
         # Merge merge_branch into this one
