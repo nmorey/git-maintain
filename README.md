@@ -119,9 +119,36 @@ v\1
 
 Note that this value can be overriden by the stable-base.XXX value if needed
 
+To verify your setup, you can run 'git maintain summary' which will show you your configured values and the matching local and upstrema branches that git-maintain sees
+```
+$ git maintain summary
+# INFO: Configuration summary:
+# INFO: Stable remote: stable
+# INFO: Validation remote: github
+# INFO: 
+# INFO: Branch config:
+# INFO: Local branch format: /dev\/stable-v([0-9]*)/
+# INFO: Remote stable branch format: stable-v\1
+# INFO: Remote stable base format: v\1
+# INFO: 
+# INFO: Local branches:
+# INFO: dev/stable-v15/master -> stable/stable-v15
+# INFO: dev/stable-v16/master -> stable/stable-v16
+# INFO: dev/stable-v17/master -> stable/stable-v17
+# INFO: dev/stable-v18/master -> stable/stable-v18
+# INFO: dev/stable-v19/master -> stable/stable-v19
+# INFO: dev/stable-v20/master -> stable/stable-v20
+# INFO: dev/stable-v21/master -> stable/stable-v21
+# INFO: dev/stable-v22/master -> stable/stable-v22
+# INFO: 
+# INFO: Upstream branches:
+# INFO: <MISSING> -> stable/stable-v23
+```
+
 Also, once you set these parameters, you can have git-maintain create all branches for you by running
 ``
 $ git maintain create
+# INFO: Creating missing dev/stable-v23/master from stable/stable-v23
 ```
 ## Day-to-day workflow
 

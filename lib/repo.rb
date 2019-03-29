@@ -6,11 +6,13 @@ module GitMaintain
 
         ACTION_LIST = [
             :list_branches,
+            :summary,
             # Internal commands for completion
             :list_suffixes, :submit_release
         ]
         ACTION_HELP = [
             "* submit_release: Push the to stable and create the release packages",
+            "* summary: Displays a summary of the configuration and the branches git-maintain sees"
         ]
 
         def self.load(path=".")
@@ -255,7 +257,42 @@ module GitMaintain
         def submit_release(opts)
             submitReleases(opts)
         end
+        def summary(opts)
+             log(:INFO, "Configuration summary:")
+             log(:INFO, "Stable remote: #{@@STABLE_REPO}")
+             log(:INFO, "Validation remote: #{@@VALID_REPO}")
+             log(:INFO, "")
+             log(:INFO, "Branch config:")
+             log(:INFO, "Local branch format: /#{@branch_format_raw}/")
+             log(:INFO, "Remote stable branch format: #{@stable_branch_format}")
+             log(:INFO, "Remote stable base format: #{@stable_base_format}")
 
+             brList = getBranchList(opts[:br_suff])
+             brStList = getStableBranchList()
+
+             if brList.length > 0 then
+                 log(:INFO, "")
+                 log(:INFO, "Local branches:")
+                 brList.each(){|br|
+                     localBr = versionToLocalBranch(br, opts[:br_suff])
+                     stableBr = @@STABLE_REPO + "/" + versionToStableBranch(br)
+
+                     runGit("rev-parse --verify --quiet #{stableBr}")
+                     stableBr = "<MISSING>" if $? != 0 
+                     log(:INFO, "#{localBr} -> #{stableBr}")
+                     brStList.delete(br)
+                 }
+             end
+
+             if brStList.length > 0 then
+                 log(:INFO, "")
+                 log(:INFO, "Upstream branches:")
+                 brStList.each(){|br|
+                     stableBr = @@STABLE_REPO + "/" + versionToStableBranch(br)
+                     log(:INFO, "<MISSING> -> #{stableBr}")
+                 }
+             end
+       end
         def find_alts(commit)
             alts=[]
 
