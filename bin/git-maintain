@@ -20,7 +20,7 @@ actionParser.separator ""
 actionParser.separator "Options:"
 actionParser.on("-h", "--help", "Display usage.") { |val| puts actionParser.to_s; exit 0 }
 actionParser.separator "Possible actions:"
-GitMaintain::getActionAttr("ACTION_HELP").each(){|x|
+GitMaintain::getActionAttr("ACTION_HELP").sort.each(){|x|
     actionParser.separator "\t " + x
 }
 rest = actionParser.order!(ARGV);
