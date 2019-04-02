@@ -49,6 +49,7 @@ module GitMaintain
             if path == nil
                 @path = Dir.pwd()
             end
+            @name = File.basename(@path)
 
             @valid_repo = runGit("config maintain.valid-repo 2> /dev/null").chomp()
             @valid_repo = @@VALID_REPO if @valid_repo == ""
@@ -73,7 +74,7 @@ module GitMaintain
                 m
             }
         end
-        attr_reader :path, :remote_valid, :remote_stable, :valid_repo, :stable_repo
+        attr_reader :path, :name, :remote_valid, :remote_stable, :valid_repo, :stable_repo
 
         def log(lvl, str)
             GitMaintain::log(lvl, str)
