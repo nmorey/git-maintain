@@ -326,8 +326,17 @@ module GitMaintain
                 log(:INFO, "Nothing to push")
                 return
             end
+            return "#{@local_branch}:#{@local_branch}"
+        end
 
-           @repo.runGit("push #{opts[:push_force] == true ? "-f" : ""} #{@repo.valid_repo} #{@local_branch}")
+        def self.push_epilogue(opts, branches)
+            # Compact to remove empty entries
+            branches.compact!()
+
+            return if branches.length == 0
+
+            opts[:repo].runGit("push #{opts[:push_force] == true ? "-f" : ""} "+
+                               "#{opts[:repo].valid_repo} #{branches.join(" ")}")
         end
 
         # Monitor the build status on Travis
