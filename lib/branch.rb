@@ -387,13 +387,25 @@ module GitMaintain
 
             rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "submit")
             if rep == "y" then
-                @repo.runGit("push #{@repo.stable_repo} #{@local_branch}:#{@remote_branch}")
+                return "#{@local_branch}:#{@remote_branch}"
             else
                 log(:INFO, "Skipping push to stable")
                 return
             end
         end
 
+
+        def self.push_stable_epilogue(opts, branches)
+            # Compact to remove empty entries
+            branches.compact!()
+
+            return if branches.length == 0
+            puts "push #{opts[:push_force] == true ? "-f" : ""} "+
+                               "#{opts[:repo].stable_repo} #{branches.join(" ")}"
+
+#            opts[:repo].runGit("push #{opts[:push_force] == true ? "-f" : ""} "+
+#                               "#{opts[:repo].stable_repo} #{branches.join(" ")}")
+        end
          # Monitor the build status of the stable branch on Travis
         def monitor_stable(opts)
             st = @travis.getStableState(@stable_head)
