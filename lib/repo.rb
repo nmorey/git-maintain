@@ -86,6 +86,7 @@ module GitMaintain
         def runSystem(cmd)
             return system("cd #{@path} && #{cmd}")
         end
+
         def runGit(cmd)
             log(:DEBUG, "Called from #{caller[1]}")
             log(:DEBUG, "Running git command '#{cmd}'")
@@ -99,6 +100,9 @@ module GitMaintain
                   if [ ! -f $GIT_ASKPASS ]; then
                   	export GIT_ASKPASS=/usr/lib/ssh/ssh-askpass;
                   fi; git --work-tree=#{@path} imap-send #{cmd}`
+        end
+        def getGitConfig(entry)
+            return runGit("config #{entry} 2> /dev/null").chomp()
         end
 
         def runBash()
