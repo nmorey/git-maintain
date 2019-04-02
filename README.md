@@ -146,7 +146,7 @@ $ git maintain summary
 ```
 
 Also, once you set these parameters, you can have git-maintain create all branches for you by running
-``
+```
 $ git maintain create
 # INFO: Creating missing dev/stable-v23/master from stable/stable-v23
 ```
