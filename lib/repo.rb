@@ -51,9 +51,9 @@ module GitMaintain
             end
             @name = File.basename(@path)
 
-            @valid_repo = runGit("config maintain.valid-repo 2> /dev/null").chomp()
+            @valid_repo = getGitConfig("maintain.valid-repo")
             @valid_repo = @@VALID_REPO if @valid_repo == ""
-            @stable_repo = runGit("config maintain.stable-repo 2>/dev/null").chomp()
+            @stable_repo = getGitConfig("maintain.stable-repo")
             @stable_repo = @@STABLE_REPO if @stable_repo == ""
 
             @remote_valid=runGit("remote -v | egrep '^#{@valid_repo}' | grep fetch |
@@ -61,10 +61,10 @@ module GitMaintain
             @remote_stable=runGit("remote -v | egrep '^#{@stable_repo}' | grep fetch |
                                       awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
 
-            @branch_format_raw = runGit("config maintain.branch-format 2> /dev/null").chomp()
+            @branch_format_raw = getGitConfig("maintain.branch-format")
             @branch_format = Regexp.new(/#{@branch_format_raw}/)
-            @stable_branch_format = runGit("config maintain.stable-branch-format 2> /dev/null").chomp()
-            @stable_base_format = runGit("config maintain.stable-base-format 2> /dev/null").chomp()
+            @stable_branch_format = getGitConfig("maintain.stable-branch-format")
+            @stable_base_format = getGitConfig("maintain.stable-base-format")
 
             @stable_base_patterns=
                 runGit("config --get-regexp   stable-base | egrep '^stable-base\.' | "+
@@ -180,9 +180,9 @@ module GitMaintain
                 mail_path=`mktemp`.chomp()
                 mail = File.open(mail_path, "w+")
                 mail.puts "From " + runGit("rev-parse HEAD") + " " + `date`.chomp()
-                mail.puts "From: " + runGit("config user.name") +
-                          " <" + runGit("config user.email") +">"
-                mail.puts "To: " + runGit("config patch.target")
+                mail.puts "From: " + getGitConfig("user.name") +
+                          " <" + getGitConfig("user.email") +">"
+                mail.puts "To: " + getGitConfig("patch.target")
                 mail.puts "Date: " + `date -R`.chomp()
 
                 if new_tags.length > 4 then
