@@ -59,20 +59,20 @@ module GitMaintain
     end
     module_function :registerCustom
 
-    def getCustom(repo_name)
-        return @@custom_classes[repo_name]
-    end
-    module_function :getCustom
-
-    def loadClass(default_class, repo_name, *more)
+    def getClass(default_class, repo_name)
         custom = @@custom_classes[repo_name]
         if custom != nil && custom[default_class] != nil then
             log(:DEBUG,"Detected custom #{default_class} class for repo '#{repo_name}'")
-            return custom[default_class].new(*more)
+            return custom[default_class]
         else
             log(:DEBUG,"Detected NO custom #{default_class} classes for repo '#{repo_name}'")
-            return default_class.new(*more)
+            return default_class
         end
+    end
+    module_function :getClass
+
+    def loadClass(default_class, repo_name, *more)
+        return GitMaintain::getClass(default_class, repo_name).new(*more)
     end
     module_function :loadClass
 
