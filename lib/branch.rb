@@ -54,7 +54,7 @@ module GitMaintain
             opts[:no_travis] = false
             opts[:all] = false
             opts[:check_only] = false
-            opts[:no_fetch] = false
+            opts[:fetch] = nil
             opts[:watch] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
@@ -70,8 +70,8 @@ module GitMaintain
             end
 
             if NO_FETCH_ACTIONS.index(action) == nil
-                optsParser.on("--no-fetch", "Skip fetch of stable repo.") {
-                    |val| opts[:no_fetch] = true}
+                optsParser.on("--[no-]fetch", "Enable/Disable fetch of stable repo.") {
+                    |val| opts[:fetch] = val}
             end
 
             case action
@@ -126,9 +126,9 @@ module GitMaintain
             opts[:travis] = travis
             brClass = GitMaintain::getClass(self, repo.name)
 
-            if NO_FETCH_ACTIONS.index(action) == nil && opts[:no_fetch] == false then
+            if NO_FETCH_ACTIONS.index(action) == nil && opts[:fetch] != false then
                 GitMaintain::log(:INFO, "Fetching stable repo")
-                repo.stableUpdate()
+                repo.stableUpdate(opts[:fetch])
             end
 
             branchList=[]

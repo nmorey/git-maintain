@@ -61,6 +61,18 @@ module GitMaintain
             @remote_stable=runGit("remote -v | egrep '^#{@stable_repo}' | grep fetch |
                                       awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
 
+            @auto_fetch = getGitConfig("maintain.autofetch")
+            case @auto_fetch
+            when ""
+                @auto_fetch = nil
+            when "true", "yes", "on"
+                @auto_fetch = true
+            when "false", "no", "off"
+                @auto_fetch = false
+            else
+                raise("Invalid value '#{@auto_fetch}' in git config for maintain.autofetch")
+            end
+
             @branch_format_raw = getGitConfig("maintain.branch-format")
             @branch_format = Regexp.new(/#{@branch_format_raw}/)
             @stable_branch_format = getGitConfig("maintain.stable-branch-format")
@@ -119,7 +131,9 @@ module GitMaintain
             return runGit("show --format=oneline --no-patch --no-decorate #{sha}")
         end
 
-        def stableUpdate()
+        def stableUpdate(fetch=nil)
+            fetch = @auto_fetch if fetch == nil
+            return if fetch == false
             log(:VERBOSE, "Fetching stable updates...")
             runGit("fetch #{@stable_repo}")
         end

@@ -258,6 +258,8 @@ Enjoy, and feel free to report bugs, missing features and/or send patches
 
 This is a summary of all the settings that can be set in the git config:
 
+- `maintain.autofetch`: Enable/Disable auto fetching. Can be overriden by the --[no-]fetch option on the CLI
+   If unset, autofetch is enabled
 - `maintain.branch-format`: Local branch name space that also extracts the version
    Example: dev\/stable-v([0-9]*) will allow all branch names dev/stable-vXXX/foo to be used against stable branch with version XXX
 - `maintain.stable-branch-format`: Name of the stable branch generated with the version extracted by the `maintain.branch-format` regexp.

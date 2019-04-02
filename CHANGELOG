@@ -1,5 +1,6 @@
 * Add summary command
 * push and push_stable now push all the selected branch at once
+* Add maintain.autofetch setting in gitconfig to enable/disable autofetch
 
 ------------------
 0.6.0  (2019-03-21)
