@@ -122,6 +122,9 @@ module GitMaintain
         def self.execAction(opts, action)
             repo   = Repo::load()
             travis = TravisChecker::load(repo)
+            opts[:repo] = repo
+            opts[:travis] = travis
+            brClass = GitMaintain::getClass(self, repo.name)
 
             if NO_FETCH_ACTIONS.index(action) == nil && opts[:no_fetch] == false then
                 repo.stableUpdate()
@@ -154,13 +157,24 @@ module GitMaintain
 
             loop do
                 system("clear; date") if opts[:watch] != false
+
+                res=[]
+
+                # Iterate concerned on all branches
                 branchList.each(){|branch|
                     if NO_CHECKOUT_ACTIONS.index(action) == nil  then
                         GitMaintain::log(:INFO, "Working on #{branch.verbose_name}")
                         branch.checkout()
                     end
-                    branch.send(action, opts)
+                    res << branch.send(action, opts)
                 }
+
+                # Run epilogue (if it exists)
+                begin
+                    brClass.send(action.to_s() + "_epilogue", opts, res)
+                rescue NoMethodError => e
+                end
+
                 break if opts[:watch] == false
                 sleep(opts[:watch])
                 travis.emptyCache()
