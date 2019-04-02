@@ -254,3 +254,17 @@ Review your email, send it and your day is over !
 
 Enjoy, and feel free to report bugs, missing features and/or send patches
 
+## Git config settings
+
+This is a summary of all the settings that can be set in the git config:
+
+- `maintain.branch-format`: Local branch name space that also extracts the version
+   Example: dev\/stable-v([0-9]*) will allow all branch names dev/stable-vXXX/foo to be used against stable branch with version XXX
+- `maintain.stable-branch-format`: Name of the stable branch generated with the version extracted by the `maintain.branch-format` regexp.
+   Example: stable-v\1 will track dev/stable-vXXX/foo against <STABLE_REPO>/stable-vXXX
+- `maintain.stable-base-format`: Name of the tag from which the stable branch was forked from generated with the version extracted by the `maintain.branch-format` regexp.
+   Example: v\1 will be mark vXXX has the fork tag for branch <STABLE_REPO>/stable-vXXX and local branch dev/stable-vXXX/foo
+   This settings is only needed when using `git maintain steal` command
+   This rule can be overriden by a specific entry in gitconfig:
+   `stable-base.dev---stable-vXXX vYY-ZZ`
+   As git does not allow `/` in gitconfig they are to be replaced by `---`
