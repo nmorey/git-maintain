@@ -127,6 +127,7 @@ module GitMaintain
             brClass = GitMaintain::getClass(self, repo.name)
 
             if NO_FETCH_ACTIONS.index(action) == nil && opts[:no_fetch] == false then
+                GitMaintain::log(:INFO, "Fetching stable repo")
                 repo.stableUpdate()
             end
 
