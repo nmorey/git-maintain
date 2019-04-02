@@ -401,11 +401,7 @@ module GitMaintain
             branches.compact!()
 
             return if branches.length == 0
-            puts "push #{opts[:push_force] == true ? "-f" : ""} "+
-                               "#{opts[:repo].stable_repo} #{branches.join(" ")}"
-
-#            opts[:repo].runGit("push #{opts[:push_force] == true ? "-f" : ""} "+
-#                               "#{opts[:repo].stable_repo} #{branches.join(" ")}")
+            opts[:repo].runGit("push #{opts[:repo].stable_repo} #{branches.join(" ")}")
         end
          # Monitor the build status of the stable branch on Travis
         def monitor_stable(opts)
