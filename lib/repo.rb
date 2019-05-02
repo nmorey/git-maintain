@@ -130,6 +130,9 @@ module GitMaintain
         def getCommitHeadline(sha)
             return runGit("show --format=oneline --no-patch --no-decorate #{sha}")
         end
+        def getCommitSubj(sha)
+            return runGit("log -1 --pretty=\"%s\" #{sha}")
+        end
 
         def stableUpdate(fetch=nil)
             fetch = @auto_fetch if fetch == nil

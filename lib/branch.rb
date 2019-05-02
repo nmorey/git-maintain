@@ -490,7 +490,7 @@ module GitMaintain
 
 	        # Grab the subject, since commit sha1 is different between branches we
 	        # have to look it up based on subject.
-	        subj=@repo.runGit("log -1 --pretty=\"%s\" #{commit}")
+	        subj=@repo.getCommitSubj(commit)
 	        if $? != 0 then
 		        return false
 	        end
@@ -603,7 +603,7 @@ module GitMaintain
         end
 
         def steal_one(opts, commit)
-		    subj=@repo.runGit("log -1 --format=\"%s\" #{commit}")
+		    subj=@repo.getCommitSubj(commit)
             subj.gsub!(/"/, '\"')
 		    msg=''
 
