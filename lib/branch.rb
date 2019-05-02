@@ -617,8 +617,10 @@ module GitMaintain
                 return true
 		    end
 
+            log(:VERBOSE, "Found relevant commit #{@repo.getCommitHeadline(commit)}")
 		    if is_in_tree?(orig_cmt) == true
 		        # Commit is already in the stable branch, skip
+                log(:VERBOSE, "Commit is already in tree")
                 return true
 		    end
 
