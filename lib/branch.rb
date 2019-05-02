@@ -496,7 +496,7 @@ module GitMaintain
 	        end
 
 	        # Try and find if there's a commit with given subject the hard way
-	        @repo.runGit("log --pretty=\"%H\" -F --grep \"#{subj}\" "+
+	        @repo.runGit("log --pretty=\"%H\" -F --grep \"#{subj.gsub("\"", '\\"')}\" "+
                          "#{@stable_base}..HEAD").split("\n").each(){|cmt|
                 cursubj=@repo.runGit("log -1 --format=\"%s\" #{cmt}")
                 if cursubj = subj then
