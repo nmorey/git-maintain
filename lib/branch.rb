@@ -349,7 +349,7 @@ module GitMaintain
                 suff= " started at #{@travis.getValidTS(head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
-            if st == "failed" && opts[:watch] == false
+            if (st == "failed" || st == "errored") && opts[:watch] == false
                 rep = "y"
                 suff=""
                 while rep == "y"
