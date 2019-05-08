@@ -43,11 +43,11 @@ mv NEWS.new NEWS")
 
             # Add and commit
             @repo.runGit("add  rpm/hpc-testing.spec NEWS")
-            @repo.runGit("commit -F #{tag_path} --verbose --edit --signoff")
+            @repo.runGitInteractive("commit -F #{tag_path} --verbose --edit --signoff")
             if $? != 0 then
                 raise("Failed to commit on branch #{local_branch}")
             end
-            @repo.runGit("tag -a -s v#{new_ver} --edit -F #{tag_path}")
+            @repo.runGitInteractive("tag -a -s v#{new_ver} --edit -F #{tag_path}")
             if $? != 0 then
                 raise("Failed to tag branch #{local_branch}")
             end

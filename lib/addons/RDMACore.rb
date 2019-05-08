@@ -50,7 +50,7 @@ module GitMaintain
 
             if rel_type == :major
                 # For major, tag the current version first
-                @repo.runGit("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
+                @repo.runGitInteractive("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
                 if $? != 0 then
                     raise("Failed to tag branch #{local_branch}")
                 end
@@ -72,13 +72,13 @@ EOF
 mv debian/changelog.new debian/changelog")
             # Add and commit
             @repo.runGit("add  redhat/rdma-core.spec suse/rdma-core.spec CMakeLists.txt debian/changelog")
-            @repo.runGit("commit -m '#{commit_msg} #{new_ver}' --verbose --edit --signoff")
+            @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose --edit --signoff")
             if $? != 0 then
                 raise("Failed to commit on branch #{local_branch}")
             end
 
             if rel_type == :stable
-                @repo.runGit("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
+                @repo.runGitInteractive("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
                 if $? != 0 then
                     raise("Failed to tag branch #{local_branch}")
                 end

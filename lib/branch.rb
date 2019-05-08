@@ -242,7 +242,7 @@ module GitMaintain
             opts[:commits].each(){|commit|
                 prev_head=@repo.runGit("rev-parse HEAD")
                 log(:INFO, "Applying #{@repo.getCommitHeadline(commit)}")
-                @repo.runGit("cherry-pick #{commit}")
+                @repo.runGitInteractive("cherry-pick #{commit}")
                 if $? != 0 then
                     log(:WARNING, "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue")
 			        @repo.runBash()
@@ -315,7 +315,7 @@ module GitMaintain
 
             rep = GitMaintain::checkLog(opts, merge_branch, @local_branch, "merge")
             if rep == "y" then
-                @repo.runGit("merge #{merge_branch}")
+                @repo.runGitInteractive("merge #{merge_branch}")
                 if $? != 0 then
                     log(:WARNING, "Merge failure. Starting bash for manual fixes. Exit shell to continue")
 			        @repo.runBash()
@@ -549,7 +549,7 @@ module GitMaintain
         end
 
         def pick_one(commit)
-            @repo.runGit("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
+            @repo.runGitInteractive("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
 	        return if  $? == 0
             if @repo.runGit("status -uno --porcelain | wc -l") == "0" then
 			    @repo.runGit("reset --hard")
@@ -559,7 +559,7 @@ module GitMaintain
 		    # That didn't work? Let's try that with every variation of the commit
 		    # in other stable trees.
             @repo.find_alts(commit).each(){|alt_commit|
-			    @repo.runGit("cherry-pick --strategy=recursive -Xpatience -x #{alt_commit} &> /dev/null")
+			    @repo.runGitInteractive("cherry-pick --strategy=recursive -Xpatience -x #{alt_commit} &> /dev/null")
 			    if $? == 0 then
 				    return
 			    end
@@ -567,7 +567,7 @@ module GitMaintain
             }
 		    # Still no? Let's go back to the original commit and hand it off to
 		    # the user.
-		    @repo.runGit("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
+		    @repo.runGitInteractive("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
             raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
 	        return false
         end
