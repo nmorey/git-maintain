@@ -104,6 +104,12 @@ module GitMaintain
             log(:DEBUG, "Running git command '#{cmd}'")
             return `git --work-tree=#{@path} #{cmd}`.chomp()
         end
+        def runGitInteractive(cmd)
+            log(:DEBUG, "Called from #{caller[1]}")
+            log(:DEBUG, "Running interactive git command '#{cmd}'")
+            return system("git --work-tree=#{@path} #{cmd}")
+        end
+
         def runGitImap(cmd)
             return `export GIT_ASKPASS=$(dirname $(dirname $(which git)))/lib/git-core/git-gui--askpass;
                   if [ ! -f $GIT_ASKPASS ]; then
