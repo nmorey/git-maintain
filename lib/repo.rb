@@ -85,6 +85,20 @@ module GitMaintain
                 m[y[0]] = y[1]
                 m
             }
+
+            @mail_format = getGitConfig("maintain.mail-format")
+            if @mail_format == "" then
+                @mail_format = :imap_send
+            else
+                # Check that the format is valid
+                case @mail_format
+                when "imap_send", "send_email"
+                else
+                    raise("Invalid mail-format #{@mail_format}")
+                end
+
+                @mail_format = @mail_format.to_sym()
+            end
         end
         attr_reader :path, :name, :remote_valid, :remote_stable, :valid_repo, :stable_repo
 
@@ -240,7 +254,14 @@ module GitMaintain
                 mail.puts "https://github.com/#{@remote_stable}/releases"
                 mail.close()
 
-                puts runGitImap("< #{mail_path}; rm -f #{mail_path}")
+                case @mail_format
+                when :imap_send
+                    puts runGitImap("< #{mail_path}")
+                when :send_email
+                    run("cp #{mail_path} announce-release.eml")
+                    log(:INFO, "Generated annoucement email in #{@path}/announce-release.eml")
+                end
+                run("rm -f #{mail_path}")
             end
 
             log(:WARNING, "Last chance to cancel before submitting")

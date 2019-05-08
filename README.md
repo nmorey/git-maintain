@@ -271,3 +271,6 @@ This is a summary of all the settings that can be set in the git config:
    This rule can be overriden by a specific entry in gitconfig:
    `stable-base.dev---stable-vXXX vYY-ZZ`
    As git does not allow `/` in gitconfig they are to be replaced by `---`
+ - `maintain.mail-format`: Specify how release annoucement emails are sent. Can be:
+   - `imap_send`: Store prepared email in an IMAP folder. See `main git-imap-send` for more infos. This is the default value.
+   - `send_email`: Generates a file which is compatible with git send-email
