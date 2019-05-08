@@ -231,8 +231,8 @@ module GitMaintain
                 else
                     mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + " " +
                               (new_tags.length > 1 ?
-                                   (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1] + " have ") :
-                                   (new_tags.join(" ") + " has ")) +
+                                   (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1] + " have") :
+                                   (new_tags.join(" ") + " has")) +
                               " been tagged/released"
                     mail.puts ""
                 end
