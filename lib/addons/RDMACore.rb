@@ -76,7 +76,9 @@ module GitMaintain
             @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]\\+/\\1#{new_ver}/g' redhat/rdma-core.spec suse/rdma-core.spec")
             @repo.run("sed -i -e 's/\\([sS][eE][tT](PACKAGE_VERSION[[:space:]]*\"\\)[0-9.]*\"/\\1#{new_ver}\"/g' CMakeLists.txt")
 
-            @repo.run("cat <<EOF > debian/changelog.new
+            case opts[:rel_type]
+            when :stable
+                @repo.run("cat <<EOF > debian/changelog.new
 rdma-core (#{new_ver}-1) unstable; urgency=low
 
   * New upstream release.
@@ -86,6 +88,10 @@ rdma-core (#{new_ver}-1) unstable; urgency=low
 $(cat debian/changelog)
 EOF
 mv debian/changelog.new debian/changelog")
+            when :major
+                @repo.run("sed -i -e 's/^rdma-core (#{rel_ver}-1)/rdma-core (#{new_ver}-1)/' debian/changelog")
+            end
+
             # Add and commit
             @repo.runGit("add  redhat/rdma-core.spec suse/rdma-core.spec CMakeLists.txt debian/changelog")
             @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose --edit --signoff")
