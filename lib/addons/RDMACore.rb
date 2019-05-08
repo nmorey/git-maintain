@@ -2,17 +2,33 @@ module GitMaintain
     class RDMACoreBranch < Branch
         REPO_NAME = "rdma-core"
 
+        def self.set_opts(action, optsParser, opts)
+            opts[:rel_type] = nil
+
+            case action
+            when :release
+                 optsParser.on("--major", "Release a major version.") {
+                     opts[:rel_type] = :major }
+                 optsParser.on("--stable", "Release a stable version.") {
+                     opts[:rel_type] = :stable }
+           end
+        end
+        def self.check_opts(opts)
+            if opts[:action] == :release then
+                if opts[:rel_type] == nil then
+                    raise "No release type specified use --stable or --major"
+                end
+            end
+        end
         def release(opts)
             prev_ver=@repo.runGit("show HEAD:CMakeLists.txt  | egrep \"[sS][eE][tT]\\\\(PACKAGE_VERSION\"").
                          chomp().gsub(/[sS][eE][tT]\(PACKAGE_VERSION\s*"([0-9.]*)".*$/, '\1')
             ver_nums = prev_ver.split(".")
             new_ver =  (ver_nums[0 .. -2] + [ver_nums[-1].to_i() + 1 ]).join(".")
             rel_ver = new_ver
-            rel_type = :stable
             commit_msg = "Bump to version"
 
-            if @branch_type == :user_specified && @local_branch == "master"
-                rel_type = :major
+            if opts[:rel_type] == :major
                 new_ver = ([ ver_nums[0].to_i() + 1] + ver_nums[1 .. -1]).join(".")
                 rel_ver = prev_ver
                 prev_ver = ([ ver_nums[0].to_i() - 1] + ver_nums[1 .. -1]).join(".")
@@ -28,7 +44,7 @@ module GitMaintain
                 git_prev_ver = "v" + ver_nums[0 .. -2].join(".")
             end
 
-            puts "Preparing #{rel_type.to_s} release #{prev_ver} => #{rel_ver}"
+            puts "Preparing #{opts[:rel_type].to_s} release #{prev_ver} => #{rel_ver}"
             rep = GitMaintain::checkLog(opts, @local_branch, git_prev_ver, "release")
             if rep != "y" then
                 puts "Skipping release"
@@ -42,13 +58,13 @@ module GitMaintain
             tag_file.puts "rdma-core-#{rel_ver}:"
             tag_file.puts ""
             tag_file.puts "Updates from version #{prev_ver}"
-            if rel_type == :stable then
+            if opts[:rel_type] == :stable then
                 tag_file.puts " * Backport fixes:"
             end
             tag_file.puts `git log HEAD ^#{git_prev_ver} --no-merges --format='   * %s'`
             tag_file.close()
 
-            if rel_type == :major
+            if opts[:rel_type] == :major
                 # For major, tag the current version first
                 @repo.runGitInteractive("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
                 if $? != 0 then
@@ -77,7 +93,7 @@ mv debian/changelog.new debian/changelog")
                 raise("Failed to commit on branch #{local_branch}")
             end
 
-            if rel_type == :stable
+            if opts[:rel_type] == :stable
                 @repo.runGitInteractive("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
                 if $? != 0 then
                     raise("Failed to tag branch #{local_branch}")
