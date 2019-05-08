@@ -204,7 +204,12 @@ module GitMaintain
             @head          = @repo.runGit("rev-parse --verify --quiet #{@local_branch}")
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
             @stable_head   = @repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
-            @stable_base   = @repo.findStableBase(@local_branch)
+            case @branch_type
+            when :std
+                @stable_base   = @repo.findStableBase(@local_branch)
+            when :user_specified
+                @stable_base   = @remote_ref
+            end
         end
         attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head,
                     :verbose_name, :exists
