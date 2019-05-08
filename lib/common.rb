@@ -59,7 +59,7 @@ module GitMaintain
     end
     module_function :registerCustom
 
-    def getClass(default_class, repo_name)
+    def getClass(default_class, repo_name = File.basename(Dir.pwd()))
         custom = @@custom_classes[repo_name]
         if custom != nil && custom[default_class] != nil then
             log(:DEBUG,"Detected custom #{default_class} class for repo '#{repo_name}'")
@@ -97,8 +97,14 @@ module GitMaintain
     def setOpts(action, optsParser, opts)
          ACTION_CLASS.each(){|x|
             next if x::ACTION_LIST.index(action) == nil
-            next if x.singleton_methods().index(:set_opts) == nil
-            x.set_opts(action, optsParser, opts)
+            if x.singleton_methods().index(:set_opts) != nil then
+                x.set_opts(action, optsParser, opts)
+            end
+            # Try to add repo specific opts
+            y = getClass(x)
+            if x != y && y.singleton_methods().index(:set_opts) != nil then
+                y.set_opts(action, optsParser, opts)
+            end
             break
         }
     end
@@ -108,6 +114,12 @@ module GitMaintain
         ACTION_CLASS.each(){|x|
             next if x.singleton_methods().index(:check_opts) == nil
             x.check_opts(opts)
+
+            # Try to add repo specific opts
+            y = getClass(x)
+            if x != y && y.singleton_methods().index(:check_opts) != nil then
+                y.check_opts(opts)
+            end
         }
     end
     module_function :checkOpts
