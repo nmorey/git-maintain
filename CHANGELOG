@@ -3,6 +3,10 @@
 * Add maintain.autofetch setting in gitconfig to enable/disable autofetch
 * Support 'errored' status in travis
 * Fix 'steal' command for commits containing double quotes
+* Fixes for rdma-core release procedure
+* Support send-email for release annoucenement
+* Fix support for interactive editor (ie vim)
+* Support repo specific action options
 
 ------------------
 0.6.0  (2019-03-21)
