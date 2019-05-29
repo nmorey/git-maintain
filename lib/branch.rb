@@ -212,7 +212,7 @@ module GitMaintain
             end
         end
         attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head,
-                    :verbose_name, :exists
+                    :verbose_name, :exists, :stable_base
 
         def log(lvl, str)
             GitMaintain::log(lvl, str)
