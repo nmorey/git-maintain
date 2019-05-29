@@ -316,6 +316,13 @@ module GitMaintain
              log(:INFO, "Remote stable branch format: #{@stable_branch_format}")
              log(:INFO, "Remote stable base format: #{@stable_base_format}")
 
+             if @stable_base_patterns.length > 0 then
+                 log(:INFO, "")
+                 log(:INFO, "Stable base rules:")
+                 @stable_base_patterns.each(){|name, base|
+                     log(:INFO, "\t#{name} -> #{base}")
+                 }
+             end
              brList = getBranchList(opts[:br_suff])
              brStList = getStableBranchList()
 
@@ -323,12 +330,13 @@ module GitMaintain
                  log(:INFO, "")
                  log(:INFO, "Local branches:")
                  brList.each(){|br|
-                     localBr = versionToLocalBranch(br, opts[:br_suff])
-                     stableBr = @@STABLE_REPO + "/" + versionToStableBranch(br)
-
+                     branch = Branch.load(self, br, nil, opts[:branch_suff])
+                     localBr = branch.local_branch
+                     stableBr = @@STABLE_REPO + "/" + branch.remote_branch
+                     stableBase = branch.stable_base
                      runGit("rev-parse --verify --quiet #{stableBr}")
                      stableBr = "<MISSING>" if $? != 0 
-                     log(:INFO, "#{localBr} -> #{stableBr}")
+                     log(:INFO, "\t#{localBr} -> #{stableBr} (#{stableBase})")
                      brStList.delete(br)
                  }
              end
@@ -337,8 +345,10 @@ module GitMaintain
                  log(:INFO, "")
                  log(:INFO, "Upstream branches:")
                  brStList.each(){|br|
-                     stableBr = @@STABLE_REPO + "/" + versionToStableBranch(br)
-                     log(:INFO, "<MISSING> -> #{stableBr}")
+                     branch = Branch.load(self, br, nil, opts[:branch_suff])
+                     stableBr = @@STABLE_REPO + "/" + branch.remote_branch
+                     stableBase = branch.stable_base
+                     log(:INFO, "\t<MISSING> -> #{stableBr} (#{stableBase})")
                  }
              end
        end
