@@ -271,7 +271,7 @@ module GitMaintain
             end
 
             master_sha=@repo.runGit("rev-parse origin/master")
-            res = steal_all(opts, "#{base_ref}..#{master_sha}")
+            res = steal_all(opts, "#{base_ref}..#{master_sha}", true)
 
             # If we picked all the commits (or nothing happened)
             # Mark the current master as the last checked point so we
@@ -609,17 +609,23 @@ module GitMaintain
             return do_cp
         end
 
-        def steal_one(opts, commit)
-		    subj=@repo.getCommitSubj(commit)
-            subj.gsub!(/"/, '\"')
+        def steal_one(opts, commit, mainline=false)
 		    msg=''
+            orig_cmt=commit
 
-		    # Let's grab the mainline commit id, this is useful if the version tag
-		    # doesn't exist in the commit we're looking at but exists upstream.
-		    orig_cmt=@repo.runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
-            "#{@stable_base}..origin/master | tail -n1")
+            if mainline == false then
+		        subj=@repo.getCommitSubj(commit)
+                subj.gsub!(/"/, '\"')
+		        # Let's grab the mainline commit id, this is useful if the version tag
+		        # doesn't exist in the commit we're looking at but exists upstream.
+		        orig_cmt=@repo.runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
+                                      "#{@stable_base}..origin/master | tail -n1")
 
-		    # If the commit doesn't apply for us, skip it
+                if orig_cmt == "" then
+                    log(:WARNING, "Could not find commit #{commit} in mainline")
+                end
+            end
+            # If the commit doesn't apply for us, skip it
 		    if is_relevant?(orig_cmt) != true
                 return true
 		    end
@@ -665,10 +671,10 @@ module GitMaintain
             end
         end
 
-        def steal_all(opts, range)
+        def steal_all(opts, range, mainline = false)
             res = true
  	        @repo.runGit("log --no-merges --format=\"%H\" #{range} | tac").split("\n").each(){|commit|
-                res &= steal_one(opts, commit)
+                res &= steal_one(opts, commit, mainline)
             }
             return res
        end
