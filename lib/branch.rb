@@ -532,12 +532,14 @@ module GitMaintain
 	        end
 
 	        # Let's see if there's a version tag in this commit
-	        full=@repo.runGit("show #{commit} | grep -i 'stable@'").gsub(/.* /, "")
+	        full=@repo.runGit("show #{commit} | grep -i 'stable@'").gsub(/.* #?/, "")
 
 	        # Sanity check our extraction
             if full =~ /stable/ then
                 return false
             end
+
+            full = @repo.runGit("rev-parse #{full}^{commit}")
 
 	        # Make sure our branch contains this version
 	        if @repo.runGit("merge-base #{@head} #{full}") == full then
