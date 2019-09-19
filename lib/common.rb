@@ -112,6 +112,7 @@ module GitMaintain
 
     def checkOpts(opts)
         ACTION_CLASS.each(){|x|
+            next if x::ACTION_LIST.index(opts[:action]) == nil
             next if x.singleton_methods().index(:check_opts) == nil
             x.check_opts(opts)
 
