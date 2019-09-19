@@ -47,7 +47,7 @@ module GitMaintain
 
         def self.set_opts(action, optsParser, opts)
             opts[:base_ver] = 0
-            opts[:version] = /.*/
+            opts[:version] = []
             opts[:commits] = []
             opts[:do_merge] = false
             opts[:push_force] = false
@@ -60,7 +60,7 @@ module GitMaintain
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
             optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
-                |val| opts[:version] = val}
+                |val| opts[:version] << val}
 
             if  ALL_BRANCHES_ACTIONS.index(action) == nil &&
                 action != :merge &&
@@ -117,6 +117,7 @@ module GitMaintain
                     raise "Action #{opts[:action]} can NOT be done on 'master' suffixed branches"
                 end
             end
+            opts[:version] = [ /.*/ ] if opts[:version].length == 0
         end
 
         def self.execAction(opts, action)
@@ -223,10 +224,10 @@ module GitMaintain
             if @version.to_i < opts[:base_ver] then
                 return :too_old
             end
-            if @version !~ opts[:version] then
-                return :no_match
-            end
-            return true
+            opts[:version].each() {|regexp|
+                return true if @version =~ regexp
+            }
+            return :no_match
         end
 
         # Checkout the repo to the given branch
