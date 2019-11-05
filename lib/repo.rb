@@ -410,9 +410,7 @@ module GitMaintain
 			               # We cannot use the 'defaults' functionality of git_config here,
 			               # because get_new_token would be evaluated before git_config ran
 			               tok = getGitConfig("maintain.api-token")
-                           if tok.to_s() == ""
-                               get_new_token
-                           end
+                           tok.to_s() == "" ? get_new_token : tok
 		               end
 	    end
  	    def get_new_token
