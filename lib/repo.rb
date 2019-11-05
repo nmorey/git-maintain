@@ -428,11 +428,19 @@ module GitMaintain
 		    rescue Octokit::Unauthorized
 			    puts "Username or password incorrect.  Please try again."
 			    return get_new_token
+            rescue Octokit::OneTimePasswordRequired
+		        print "Github OTP: "
+		        otp = $stdin.noecho(&:gets).chomp
+			    res = api.create_authorization(:scopes => [:repo], :note => "git-maintain",
+                                               :headers => {"X-GitHub-OTP" => otp})
 		    end
 
 		    token = res[:token]
-
 		    runGit("config --global maintain.api-token '#{token}'")
+
+            # Now reopen with the token so OTP does not bother us
+            @api=nil
+            token
 	    end
    end
 end
