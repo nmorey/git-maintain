@@ -108,7 +108,19 @@ mv debian/changelog.new debian/changelog")
             `rm -f #{tag_path}`
         end
     end
-
+    class RDMACoreRepo < Repo
+        def submitReleases(opts, new_tags)
+            new_tags.each(){|tag|
+                next if tag !~ /v([0-9]*)\.[0-9]*/
+                major=$1.to_i
+                # Starting from v27, do not create the github release ourself as this is done by Azure
+                createRelease(opts, tag, major <= 26)
+            }
+        end
+    end
     GitMaintain::registerCustom(RDMACoreBranch::REPO_NAME,
-                                { GitMaintain::Branch => RDMACoreBranch })
+                                {
+                                    GitMaintain::Branch => RDMACoreBranch,
+                                    GitMaintain::Repo => RDMACoreRepo
+                                })
 end
