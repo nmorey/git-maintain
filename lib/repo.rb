@@ -194,7 +194,7 @@ module GitMaintain
             return @suffix_list
         end
 
-        def submitReleases(opts)
+        def getUnreleasedTags(opts)
             remote_tags=runGit("ls-remote --tags #{@stable_repo} |
                                  egrep 'refs/tags/v[0-9.]*$'").split("\n").map(){
                 |x| x.gsub(/.*refs\/tags\//, '')
@@ -202,74 +202,62 @@ module GitMaintain
             local_tags =runGit("tag -l | egrep '^v[0-9.]*$'").split("\n")
 
             new_tags = local_tags - remote_tags
-            if new_tags.empty? then
-                log(:INFO,  "All tags are already submitted.")
-                return
-            end
+            return new_tags
+        end
+        def genReleaseNotif(opts, new_tags)
+            return if @NOTIFY_RELEASE == false
 
-            log(:WARNING, "This will officially release these tags: #{new_tags.join(", ")}")
-            rep = GitMaintain::confirm(opts, "release them")
-            if rep != 'y' then
-                raise "Aborting.."
-            end
+            mail_path=`mktemp`.chomp()
+            mail = File.open(mail_path, "w+")
+            mail.puts "From " + runGit("rev-parse HEAD") + " " + `date`.chomp()
+            mail.puts "From: " + getGitConfig("user.name") +
+                      " <" + getGitConfig("user.email") +">"
+            mail.puts "To: " + getGitConfig("patch.target")
+            mail.puts "Date: " + `date -R`.chomp()
 
-            if @NOTIFY_RELEASE != false
-                mail_path=`mktemp`.chomp()
-                mail = File.open(mail_path, "w+")
-                mail.puts "From " + runGit("rev-parse HEAD") + " " + `date`.chomp()
-                mail.puts "From: " + getGitConfig("user.name") +
-                          " <" + getGitConfig("user.email") +">"
-                mail.puts "To: " + getGitConfig("patch.target")
-                mail.puts "Date: " + `date -R`.chomp()
-
-                if new_tags.length > 4 then
-                    mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + ": new stable releases"
-                    mail.puts ""
-                    mail.puts "These version were tagged/released:\n * " +
-                              new_tags.join("\n * ")
-                    mail.puts ""
-                else
-                    mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + " " +
-                              (new_tags.length > 1 ?
-                                   (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1] + " have") :
-                                   (new_tags.join(" ") + " has")) +
-                              " been tagged/released"
-                    mail.puts ""
-                end
-                mail.puts "It's available at the normal places:"
+            if new_tags.length > 4 then
+                mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + ": new stable releases"
                 mail.puts ""
-                mail.puts "git://github.com/#{@remote_stable}"
-                mail.puts "https://github.com/#{@remote_stable}/releases"
+                mail.puts "These version were tagged/released:\n * " +
+                          new_tags.join("\n * ")
                 mail.puts ""
-                mail.puts "---"
+            else
+                mail.puts "Subject: [ANNOUNCE] " + File.basename(@path) + " " +
+                          (new_tags.length > 1 ?
+                               (new_tags[0 .. -2].join(", ") + " and " + new_tags[-1] + " have") :
+                               (new_tags.join(" ") + " has")) +
+                          " been tagged/released"
                 mail.puts ""
-                mail.puts "Here's the information from the tags:"
-                new_tags.sort().each(){|tag|
-                    mail.puts `git show #{tag} --no-decorate -q | awk '!p;/^-----END PGP SIGNATURE-----/{p=1}'`
-                    mail.puts ""
-                }
-                mail.puts "It's available at the normal places:"
-                mail.puts ""
-                mail.puts "git://github.com/#{@remote_stable}"
-                mail.puts "https://github.com/#{@remote_stable}/releases"
-                mail.close()
-
-                case @mail_format
-                when :imap_send
-                    puts runGitImap("< #{mail_path}")
-                when :send_email
-                    run("cp #{mail_path} announce-release.eml")
-                    log(:INFO, "Generated annoucement email in #{@path}/announce-release.eml")
-                end
-                run("rm -f #{mail_path}")
             end
+            mail.puts "It's available at the normal places:"
+            mail.puts ""
+            mail.puts "git://github.com/#{@remote_stable}"
+            mail.puts "https://github.com/#{@remote_stable}/releases"
+            mail.puts ""
+            mail.puts "---"
+            mail.puts ""
+            mail.puts "Here's the information from the tags:"
+            new_tags.sort().each(){|tag|
+                mail.puts `git show #{tag} --no-decorate -q | awk '!p;/^-----END PGP SIGNATURE-----/{p=1}'`
+                mail.puts ""
+            }
+            mail.puts "It's available at the normal places:"
+            mail.puts ""
+            mail.puts "git://github.com/#{@remote_stable}"
+            mail.puts "https://github.com/#{@remote_stable}/releases"
+            mail.close()
 
-            log(:WARNING, "Last chance to cancel before submitting")
-            rep= GitMaintain::confirm(opts, "submit these releases")
-            if rep != 'y' then
-                raise "Aborting.."
+            case @mail_format
+            when :imap_send
+                puts runGitImap("< #{mail_path}")
+            when :send_email
+                run("cp #{mail_path} announce-release.eml")
+                log(:INFO, "Generated annoucement email in #{@path}/announce-release.eml")
             end
-            puts `#{@@SUBMIT_BINARY}`
+            run("rm -f #{mail_path}")
+        end
+        def submitReleases(opts, new_tags)
+            puts "#{@@SUBMIT_BINARY}"
         end
 
         def versionToLocalBranch(version, suff)
@@ -304,7 +292,28 @@ module GitMaintain
             puts getSuffixList()
         end
         def submit_release(opts)
-            submitReleases(opts)
+            new_tags = getUnreleasedTags(opts)
+            if new_tags.empty? then
+                log(:INFO,  "All tags are already submitted.")
+                return
+            end
+
+            log(:WARNING, "This will officially release these tags: #{new_tags.join(", ")}")
+            rep = GitMaintain::confirm(opts, "release them")
+            if rep != 'y' then
+                raise "Aborting.."
+            end
+
+            if @NOTIFY_RELEASE != false
+                genReleaseNotif(opts, new_tags)
+            end
+
+            log(:WARNING, "Last chance to cancel before submitting")
+            rep= GitMaintain::confirm(opts, "submit these releases")
+            if rep != 'y' then
+                raise "Aborting.."
+            end
+            submitReleases(opts, new_tags)
         end
         def summary(opts)
              log(:INFO, "Configuration summary:")
