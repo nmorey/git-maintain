@@ -1,3 +1,6 @@
+require 'octokit'
+require 'io/console'
+
 module GitMaintain
     class Repo
         @@VALID_REPO = "github"
@@ -258,8 +261,23 @@ module GitMaintain
             run("rm -f #{mail_path}")
         end
         def submitReleases(opts, new_tags)
-            puts "#{@@SUBMIT_BINARY}"
+            new_tags.each(){|tag|
+                createRelease(opts, tag)
+            }
         end
+
+        def createRelease(opts, tag)
+            log(:INFO, "Creating a release for #{tag}")
+		    runGit("push #{@stable_repo} refs/tags/#{tag}")
+
+ 		    msg = runGit("tag -l -n1000 '#{tag}'") + "\n"
+
+		    # Ye ghods is is a horrific format to parse
+		    name, body = msg.split("\n", 2)
+		    name = name.gsub(/^#{tag}/, '').strip
+		    body = body.split("\n").map { |l| l.sub(/^    /, '') }.join("\n")
+		    api.create_release(@remote_stable, tag, :name => name, :body => body)
+       end
 
         def versionToLocalBranch(version, suff)
             return @branch_format_raw.gsub(/\\\//, '/').
@@ -379,5 +397,44 @@ module GitMaintain
 
             return alts
         end
-    end
+
+        #
+        # Github API stuff
+        #
+	    def api
+		    @api ||= Octokit::Client.new(:access_token => token, :auto_paginate => true)
+	    end
+
+	    def token
+		    @token ||= begin
+			               # We cannot use the 'defaults' functionality of git_config here,
+			               # because get_new_token would be evaluated before git_config ran
+			               tok = getGitConfig("maintain.api-token")
+                           if tok.to_s() == ""
+                               get_new_token
+                           end
+		               end
+	    end
+ 	    def get_new_token
+		    puts "Requesting a new OAuth token from Github..."
+		    print "Github username: "
+		    user = $stdin.gets.chomp
+		    print "Github password: "
+		    pass = $stdin.noecho(&:gets).chomp
+		    puts
+
+		    api = Octokit::Client.new(:login => user, :password => pass)
+
+		    begin
+			    res = api.create_authorization(:scopes => [:repo], :note => "git-maintain")
+		    rescue Octokit::Unauthorized
+			    puts "Username or password incorrect.  Please try again."
+			    return get_new_token
+		    end
+
+		    token = res[:token]
+
+		    runGit("config --global maintain.api-token '#{token}'")
+	    end
+   end
 end
