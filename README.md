@@ -274,3 +274,22 @@ This is a summary of all the settings that can be set in the git config:
  - `maintain.mail-format`: Specify how release annoucement emails are sent. Can be:
    - `imap_send`: Store prepared email in an IMAP folder. See `main git-imap-send` for more infos. This is the default value.
    - `send_email`: Generates a file which is compatible with git send-email
+
+# License
+
+Unless otherwise stated, everything in this repo is covered by the following
+copyright notice:
+
+    Copyright (c) 2018 SUSE
+
+    This program is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License version 3, as
+    published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
