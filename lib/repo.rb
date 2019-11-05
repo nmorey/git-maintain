@@ -266,17 +266,19 @@ module GitMaintain
             }
         end
 
-        def createRelease(opts, tag)
+        def createRelease(opts, tag, github_rel=true)
             log(:INFO, "Creating a release for #{tag}")
 		    runGit("push #{@stable_repo} refs/tags/#{tag}")
 
- 		    msg = runGit("tag -l -n1000 '#{tag}'") + "\n"
+            if github_rel == true then
+ 		        msg = runGit("tag -l -n1000 '#{tag}'") + "\n"
 
-		    # Ye ghods is is a horrific format to parse
-		    name, body = msg.split("\n", 2)
-		    name = name.gsub(/^#{tag}/, '').strip
-		    body = body.split("\n").map { |l| l.sub(/^    /, '') }.join("\n")
-		    api.create_release(@remote_stable, tag, :name => name, :body => body)
+		        # Ye ghods is is a horrific format to parse
+		        name, body = msg.split("\n", 2)
+		        name = name.gsub(/^#{tag}/, '').strip
+		        body = body.split("\n").map { |l| l.sub(/^    /, '') }.join("\n")
+		        api.create_release(@remote_stable, tag, :name => name, :body => body)
+            end
        end
 
         def versionToLocalBranch(version, suff)
