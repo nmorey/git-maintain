@@ -45,6 +45,7 @@ module GitMaintain
             @branch_list=nil
             @stable_branches=nil
             @suffix_list=nil
+            @config_cache={}
 
             if path == nil
                 @path = Dir.pwd()
@@ -134,7 +135,7 @@ module GitMaintain
                   fi; git --work-tree=#{@path} imap-send #{cmd}`
         end
         def getGitConfig(entry)
-            return runGit("config #{entry} 2> /dev/null").chomp()
+            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null").chomp()
         end
 
         def runBash()
