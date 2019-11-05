@@ -1,3 +1,6 @@
+* Drop dependency to github-release
+* Add cache for git config
+* Fixes for the steal command
 * Support multiple -V options
 
 ------------------
