@@ -73,7 +73,7 @@ module GitMaintain
             end
 
             # Update version number in relevant files
-            @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]\\+/\\1#{new_ver}/g' redhat/rdma-core.spec suse/rdma-core.spec")
+            @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]\\+/\\1#{new_ver}/g' */*.spec")
             @repo.run("sed -i -e 's/\\([sS][eE][tT](PACKAGE_VERSION[[:space:]]*\"\\)[0-9.]*\"/\\1#{new_ver}\"/g' CMakeLists.txt")
 
             case opts[:rel_type]
@@ -93,7 +93,7 @@ mv debian/changelog.new debian/changelog")
             end
 
             # Add and commit
-            @repo.runGit("add  redhat/rdma-core.spec suse/rdma-core.spec CMakeLists.txt debian/changelog")
+            @repo.runGit("add  */*.spec CMakeLists.txt debian/changelog")
             @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose --edit --signoff")
             if $? != 0 then
                 raise("Failed to commit on branch #{local_branch}")
