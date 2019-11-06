@@ -18,7 +18,7 @@ module GitMaintain
             br = findBranch(sha1, resp)
             raise("Travis build not found") if br == nil
             job_id = br["job_ids"].last().to_s()
-            return getJson(@url, "log_" + job_id, 'jobs/' + job_id + '/log', false)
+            return getJson(@url, "travis_log_" + job_id, 'jobs/' + job_id + '/log', false)
         end
         def getTS(sha1, resp)
             br = findBranch(sha1, resp)
@@ -30,10 +30,10 @@ module GitMaintain
         end
 
         def getBrValidJson()
-            return getJson(@url, :br_valid, 'repos/' + @repo.remote_valid + '/branches')
+            return getJson(@url, :travis_br_valid, 'repos/' + @repo.remote_valid + '/branches')
         end
         def getBrStableJson()
-            return getJson(@url, :br_stable, 'repos/' + @repo.remote_stable + '/branches')
+            return getJson(@url, :travis_br_stable, 'repos/' + @repo.remote_stable + '/branches')
         end
         def findBranch(sha1, resp)
             log(:DEBUG_CI, "Looking for build for #{sha1}")
