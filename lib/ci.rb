@@ -80,5 +80,9 @@ module GitMaintain
         def emptyCache()
             @cachedJson={}
         end
+
+        def isErrored(status)
+            raise("Unimplemented")
+        end
     end
 end

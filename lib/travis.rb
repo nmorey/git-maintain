@@ -73,5 +73,8 @@ module GitMaintain
         def getStableTS(br, sha1)
             return getTS(sha1, getBrStableJson())
         end
+        def isErrored(status)
+            return status == "failed" || status == "errored"
+        end
     end
 end

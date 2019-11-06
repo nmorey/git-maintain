@@ -355,7 +355,7 @@ module GitMaintain
                 suff= " started at #{@ci.getValidTS(@local_branch, @head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
-            if (st == "failed" || st == "errored") && opts[:watch] == false
+            if @ci.isErrored(st) && opts[:watch] == false
                 rep = "y"
                 suff=""
                 while rep == "y"
