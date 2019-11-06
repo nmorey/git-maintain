@@ -1,6 +1,7 @@
 module GitMaintain
     class RDMACoreBranch < Branch
         REPO_NAME = "rdma-core"
+        AZURE_MIN_VERSION = 27
 
         def self.set_opts(action, optsParser, opts)
             opts[:rel_type] = nil
@@ -114,14 +115,50 @@ mv debian/changelog.new debian/changelog")
                 next if tag !~ /v([0-9]*)\.[0-9]*/
                 major=$1.to_i
                 # Starting from v27, do not create the github release ourself as this is done by Azure
-                createRelease(opts, tag, major <= 26)
+                createRelease(opts, tag, major < AZURE_MIN_VERSION)
             }
+        end
+    end
+
+    class RDMACoreCI < CI
+        AZURE_MIN_VERSION = 27
+        def initialize(repo)
+            super(repo)
+            @travis = GitMaintain::TravisCI.new(repo)
+            @azure = GitMaintain::AzureCI.new(repo, 'ucfconsort')
+
+            # Auto generate all CI required methods
+            # Wicked ruby tricker to find all the public methods of CI but not of inherited classes
+            # to dynamically define these method in the object being created
+            (GitMaintain::CI.new(repo).public_methods() - Object.new.public_methods()).each(){|method|
+                # Skip specific emptyCache method
+                next if method == :emptyCache
+
+                self.define_singleton_method(method) { |br, *args|
+                    if br.version =~ /([0-9]+)/
+                        major=$1.to_i
+                    elsif br.version == "master" 
+                        major=99999
+                    else
+                        raise("Unable to monitor branch #{br} on a CI")
+                    end
+                    if major < AZURE_MIN_VERSION
+                        @travis.send(method, br, *args)
+                    else
+                        @azure.send(method, br, *args)
+                    end
+                }
+            }
+        end
+        def emptyCache()
+            @travis.emptyCache()
+            @azure.emptyCache()
         end
     end
     GitMaintain::registerCustom(RDMACoreBranch::REPO_NAME,
                                 {
                                     GitMaintain::Branch => RDMACoreBranch,
                                     GitMaintain::Repo => RDMACoreRepo,
-                                    GitMaintain::CI => GitMaintain::TravisCI,
+                                    GitMaintain::CI => RDMACoreCI,
                                 })
 end
