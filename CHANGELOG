@@ -2,7 +2,8 @@
 * Add cache for git config
 * Fixes for the steal command
 * Support multiple -V options
-* Factor code to allow multiple CI 
+* Factor code to allow multiple CI
+* Basic Azure CI support
 
 ------------------
 0.7.0  (2019-05-29)
