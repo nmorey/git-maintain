@@ -48,29 +48,29 @@ module GitMaintain
         end
 
         public
-        def getValidState(sha1)
+        def getValidState(br, sha1)
             return getState(sha1, getBrValidJson())
         end
-        def checkValidState(sha1)
+        def checkValidState(br, sha1)
             return checkState(sha1, getBrValidJson())
         end
-        def getValidLog(sha1)
+        def getValidLog(br, sha1)
             return getLog(sha1, getBrValidJson())
         end
-        def getValidTS(sha1)
+        def getValidTS(br, sha1)
             return getTS(sha1, getBrValidJson())
         end
 
-        def getStableState(sha1)
+        def getStableState(br, sha1)
             return getState(sha1, getBrStableJson())
         end
-        def checkStableState(sha1)
+        def checkStableState(br, sha1)
             return checkState(sha1, getBrStableJson())
         end
-        def getStableLog(sha1)
+        def getStableLog(br, sha1)
             return getLog(sha1, getBrStableJson())
         end
-        def getStableTS(sha1)
+        def getStableTS(br, sha1)
             return getTS(sha1, getBrStableJson())
         end
     end

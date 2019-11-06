@@ -52,29 +52,29 @@ module GitMaintain
         end
 
         public
-        def getValidState(sha1)
+        def getValidState(br, sha1)
             raise("Unimplemented")
         end
-        def checkValidState(sha1)
+        def checkValidState(br, sha1)
             raise("Unimplemented")
         end
-        def getValidLog(sha1)
+        def getValidLog(br, sha1)
             raise("Unimplemented")
         end
-        def getValidTS(sha1)
+        def getValidTS(br, sha1)
             raise("Unimplemented")
         end
 
-        def getStableState(sha1)
+        def getStableState(br, sha1)
             raise("Unimplemented")
         end
-        def checkStableState(sha1)
+        def checkStableState(br, sha1)
             raise("Unimplemented")
         end
-        def getStableLog(sha1)
+        def getStableLog(br, sha1)
             raise("Unimplemented")
         end
-        def getStableTS(sha1)
+        def getStableTS(br, sha1)
             raise("Unimplemented")
         end
         def emptyCache()

@@ -348,11 +348,11 @@ module GitMaintain
 
         # Monitor the build status on CI
         def monitor(opts)
-            st = @ci.getValidState(head)
+            st = @ci.getValidState(@local_branch, @head)
             suff=""
             case st
             when "started"
-                suff= " started at #{@ci.getValidTS(head)}"
+                suff= " started at #{@ci.getValidTS(@local_branch, @head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
             if (st == "failed" || st == "errored") && opts[:watch] == false
@@ -361,7 +361,7 @@ module GitMaintain
                 while rep == "y"
                     rep = GitMaintain::confirm(opts, "see the build log#{suff}")
                     if rep == "y" then
-                        log = @ci.getValidLog(head)
+                        log = @ci.getValidLog(@local_branch, @head)
                         tmp = `mktemp`.chomp()
                         tmpfile = File.open(tmp, "w+")
                         tmpfile.puts(log)
@@ -377,7 +377,7 @@ module GitMaintain
         # Push branch to the stable repo
         def push_stable(opts)
             if (opts[:no_ci] != true && @NO_CI != true) &&
-               @ci.checkValidState(@head) != true then
+               @ci.checkValidState(@local_branch, @head) != true then
                 log(:WARNING, "Build is not passed on CI. Skipping push to stable")
                 return
             end
@@ -411,11 +411,11 @@ module GitMaintain
         end
          # Monitor the build status of the stable branch on CI
         def monitor_stable(opts)
-            st = @ci.getStableState(@stable_head)
+            st = @ci.getStableState(@local_branch, @stable_head)
             suff=""
             case st
             when "started"
-                suff= " started at #{@ci.getStableTS(@stable_head)}"
+                suff= " started at #{@ci.getStableTS(@local_branch, @stable_head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
         end
