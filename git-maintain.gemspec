@@ -12,7 +12,8 @@ Gem::Specification.new do |s|
     "LICENSE",
     "CHANGELOG",
     "README.md",
-    "lib/branch.rb", "lib/common.rb", "lib/repo.rb", "lib/travis.rb",
+    "lib/branch.rb", "lib/common.rb", "lib/repo.rb",
+    "lib/ci.rb", "lib/travis.rb",
     "lib/addons/RDMACore.rb",
     "git-maintain-completion.sh"
   ]

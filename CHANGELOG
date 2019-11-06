@@ -2,6 +2,7 @@
 * Add cache for git config
 * Fixes for the steal command
 * Support multiple -V options
+* Factor code to allow multiple CI 
 
 ------------------
 0.7.0  (2019-05-29)

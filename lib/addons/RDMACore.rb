@@ -121,6 +121,7 @@ mv debian/changelog.new debian/changelog")
     GitMaintain::registerCustom(RDMACoreBranch::REPO_NAME,
                                 {
                                     GitMaintain::Branch => RDMACoreBranch,
-                                    GitMaintain::Repo => RDMACoreRepo
+                                    GitMaintain::Repo => RDMACoreRepo,
+                                    GitMaintain::CI => GitMaintain::TravisCI,
                                 })
 end

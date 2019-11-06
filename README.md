@@ -16,9 +16,9 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 - **list_stable**: List commit present in the stable branch but not in the latest associated relase
 - **merge**: Merge branch with suffix specified in -m <suff> into the main branch
 - **push**: Push branches to github for validation
-- **monitor**: Check the travis state of all branches
+- **monitor**: Check the CI state of all branches
 - **push_stable**: Push to stable repo
-- **monitor_stable**: Check the travis state of all stable branches
+- **monitor_stable**: Check the CI state of all stable branches
 - **release**: Create new release on all concerned branches
 - **reset**: Reset branch against upstream
 - **submit_release**: Push the to stable and create the release packages
@@ -157,7 +157,7 @@ Apply them to the appropriate branches
 
 ```git maintain cp -s deadbeef --version '1[789]'```
 
-And push them to my own github repo so that Travis will check everything out
+And push them to my own github repo so that CI will check everything out
 
 ```git maintain push --version '1[789]'```
 
@@ -179,7 +179,7 @@ Push it to my own github too.
 
 ```git maintain push --version '1[789]' -b pending```
 
-Once this gets accepted (and Travis is OK too), I merge this branch back to my 'master'
+Once this gets accepted (and CI is OK too), I merge this branch back to my 'master'
 
 ```git maintain merge --version '1[789]' -m pending```
 
@@ -239,7 +239,7 @@ The tag will not have been propagated anywhere else and can be deleted manually.
 
 ```git maintain push_stable --version '1[789]'```
 
-You can then monitor the status on Travis
+You can then monitor the status on CI
 
 ```git maintain monitor_stable --version '1[789]'```
 

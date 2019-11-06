@@ -33,16 +33,16 @@ module GitMaintain
             "* list_stable: List commit present in the stable branch but not in the latest associated relase",
             "* merge: Merge branch with suffix specified in -m <suff> into the main branch",
             "* push: Push branches to github for validation",
-            "* monitor: Check the travis state of all branches",
+            "* monitor: Check the CI state of all branches",
             "* push_stable: Push to stable repo",
-            "* monitor_stable: Check the travis state of all stable branches",
+            "* monitor_stable: Check the CI state of all stable branches",
             "* release: Create new release on all concerned branches",
             "* reset: Reset branch against upstream",
         ]
 
-        def self.load(repo, version, travis, branch_suff)
+        def self.load(repo, version, ci, branch_suff)
             repo_name = File.basename(repo.path)
-            return GitMaintain::loadClass(Branch, repo_name, repo, version, travis, branch_suff)
+            return GitMaintain::loadClass(Branch, repo_name, repo, version, ci, branch_suff)
         end
 
         def self.set_opts(action, optsParser, opts)
@@ -51,7 +51,7 @@ module GitMaintain
             opts[:commits] = []
             opts[:do_merge] = false
             opts[:push_force] = false
-            opts[:no_travis] = false
+            opts[:no_ci] = false
             opts[:all] = false
             opts[:check_only] = false
             opts[:fetch] = nil
@@ -85,7 +85,7 @@ module GitMaintain
                     |val| opts[:do_merge] = val}
             when :monitor, :monitor_stable
                 optsParser.on("-w", "--watch <PERIOD>", Integer,
-                              "Watch and refresh travis status every <PERIOD>.") {
+                              "Watch and refresh CI status every <PERIOD>.") {
                     |val| opts[:watch] = val}
             when :push
                 optsParser.banner += "[-f]"
@@ -93,8 +93,8 @@ module GitMaintain
                     |val| opts[:push_force] = val}
             when :push_stable
                 optsParser.banner += "[-T]"
-                optsParser.on("-T", "--no-travis", "Ignore Travis build status and push anyway.") {
-                    |val| opts[:no_travis] = true}
+                optsParser.on("-T", "--no-ci", "Ignore CI build status and push anyway.") {
+                    |val| opts[:no_ci] = true}
                 optsParser.on("-c", "--check", "Check if there is something to be pushed.") {
                     |val| opts[:check_only] = true}
             when :steal
@@ -122,9 +122,9 @@ module GitMaintain
 
         def self.execAction(opts, action)
             repo   = Repo::load()
-            travis = TravisChecker::load(repo)
+            ci = CI::load(repo)
             opts[:repo] = repo
-            opts[:travis] = travis
+            opts[:ci] = ci
             brClass = GitMaintain::getClass(self, repo.name)
 
             if NO_FETCH_ACTIONS.index(action) == nil && opts[:fetch] != false then
@@ -141,7 +141,7 @@ module GitMaintain
                     unfilteredList = repo.getBranchList(opts[:br_suff])
                 end
                 branchList = unfilteredList.map(){|br|
-                    branch = Branch::load(repo, br, travis, opts[:br_suff])
+                    branch = Branch::load(repo, br, ci, opts[:br_suff])
                     case branch.is_targetted?(opts)
                     when :too_old
                         GitMaintain::log(:VERBOSE, "Skipping older v#{branch.version}")
@@ -154,7 +154,7 @@ module GitMaintain
                     branch
                 }.compact()
             else
-                branchList = [ Branch::load(repo, opts[:manual_branch], travis, opts[:br_suff]) ]
+                branchList = [ Branch::load(repo, opts[:manual_branch], ci, opts[:br_suff]) ]
             end
 
             loop do
@@ -179,15 +179,15 @@ module GitMaintain
 
                 break if opts[:watch] == false
                 sleep(opts[:watch])
-                travis.emptyCache()
+                ci.emptyCache()
             end
         end
 
-        def initialize(repo, version, travis, branch_suff)
+        def initialize(repo, version, ci, branch_suff)
             GitMaintain::checkDirectConstructor(self.class)
 
             @repo          = repo
-            @travis        = travis
+            @ci            = ci
             @version       = version
             @branch_suff   = branch_suff
 
@@ -346,13 +346,13 @@ module GitMaintain
                                "#{opts[:repo].valid_repo} #{branches.join(" ")}")
         end
 
-        # Monitor the build status on Travis
+        # Monitor the build status on CI
         def monitor(opts)
-            st = @travis.getValidState(head)
+            st = @ci.getValidState(head)
             suff=""
             case st
             when "started"
-                suff= " started at #{@travis.getValidTS(head)}"
+                suff= " started at #{@ci.getValidTS(head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
             if (st == "failed" || st == "errored") && opts[:watch] == false
@@ -361,7 +361,7 @@ module GitMaintain
                 while rep == "y"
                     rep = GitMaintain::confirm(opts, "see the build log#{suff}")
                     if rep == "y" then
-                        log = @travis.getValidLog(head)
+                        log = @ci.getValidLog(head)
                         tmp = `mktemp`.chomp()
                         tmpfile = File.open(tmp, "w+")
                         tmpfile.puts(log)
@@ -376,9 +376,9 @@ module GitMaintain
 
         # Push branch to the stable repo
         def push_stable(opts)
-            if (opts[:no_travis] != true && @NO_TRAVIS != true) &&
-               @travis.checkValidState(@head) != true then
-                log(:WARNING, "Build is not passed on travis. Skipping push to stable")
+            if (opts[:no_ci] != true && @NO_CI != true) &&
+               @ci.checkValidState(@head) != true then
+                log(:WARNING, "Build is not passed on CI. Skipping push to stable")
                 return
             end
 
@@ -409,13 +409,13 @@ module GitMaintain
             return if branches.length == 0
             opts[:repo].runGit("push #{opts[:repo].stable_repo} #{branches.join(" ")}")
         end
-         # Monitor the build status of the stable branch on Travis
+         # Monitor the build status of the stable branch on CI
         def monitor_stable(opts)
-            st = @travis.getStableState(@stable_head)
+            st = @ci.getStableState(@stable_head)
             suff=""
             case st
             when "started"
-                suff= " started at #{@travis.getStableTS(@stable_head)}"
+                suff= " started at #{@ci.getStableTS(@stable_head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
         end

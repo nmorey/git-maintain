@@ -53,9 +53,9 @@ mv NEWS.new NEWS")
             end
             `rm -f #{tag_path}`
         end
-        def initialize(repo, version, travis, branch_suff)
-            super(repo, version, travis, branch_suff)
-            @NO_TRAVIS = true
+        def initialize(repo, version, ci, branch_suff)
+            super(repo, version, ci, branch_suff)
+            @NO_CI = true
         end
     end
     class HPCTestingRepo < Repo
@@ -66,5 +66,6 @@ mv NEWS.new NEWS")
     end
     GitMaintain::registerCustom(HPCTestingBranch::REPO_NAME,
                                 { GitMaintain::Branch => HPCTestingBranch,
-                                  GitMaintain::Repo => HPCTestingRepo})
+                                  GitMaintain::Repo => HPCTestingRepo,
+                                  GitMaintain::CI => GitMaintain::TravisCI})
 end

@@ -1,5 +1,6 @@
 $LOAD_PATH.push(BACKPORT_LIB_DIR)
 
+require 'ci'
 require 'travis'
 require 'repo'
 require 'branch'
@@ -174,8 +175,8 @@ module GitMaintain
         case lvl
         when :DEBUG
             _log("DEBUG".magenta(), str) if ENV["DEBUG"].to_s() != ""
-        when :DEBUG_TRAVIS
-            _log("DEBUG_TRAVIS".magenta(), str) if ENV["DEBUG_TRAVIS"].to_s() != ""
+        when :DEBUG_CI
+            _log("DEBUG_CI".magenta(), str) if ENV["DEBUG_CI"].to_s() != ""
         when :VERBOSE
             _log("INFO".blue(), str) if @@verbose_log == true
         when :INFO
