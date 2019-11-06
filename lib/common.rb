@@ -52,7 +52,7 @@ module GitMaintain
 
     ACTION_CLASS = [ Common, Branch, Repo ]
     @@custom_classes = {}
-
+    @@load_class = []
     @@verbose_log = false
 
     def registerCustom(repo_name, classes)
@@ -74,20 +74,22 @@ module GitMaintain
     module_function :getClass
 
     def loadClass(default_class, repo_name, *more)
-        return GitMaintain::getClass(default_class, repo_name).new(*more)
+        @@load_class.push(default_class)
+        obj = GitMaintain::getClass(default_class, repo_name).new(*more)
+        @@load_class.pop()
+        return obj
     end
     module_function :loadClass
 
     # Check that the constructor was called through loadClass
     def checkDirectConstructor(theClass)
-        # Look for the "new" in the calling tree
-        depth = 1
-        while caller_locations(depth, 1)[0].label != "new"
-            depth +=1
+        curLoad= @@load_class.last()
+        cl = theClass
+        while cl != Object
+            return if cl == curLoad
+            cl = cl.superclass
         end
-        # The function that called the constructer is just one step below
-        raise("Use GitMaintain::loadClass to construct a #{theClass} class") if
-                caller_locations(depth + 1, 1)[0].label != "loadClass"
+        raise("Use GitMaintain::loadClass to construct a #{theClass} class")
     end
     module_function :checkDirectConstructor
 
