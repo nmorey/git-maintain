@@ -348,20 +348,20 @@ module GitMaintain
 
         # Monitor the build status on CI
         def monitor(opts)
-            st = @ci.getValidState(@local_branch, @head)
+            st = @ci.getValidState(self, @head)
             suff=""
             case st
             when "started"
-                suff= " started at #{@ci.getValidTS(@local_branch, @head)}"
+                suff= " started at #{@ci.getValidTS(self, @head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
-            if @ci.isErrored(st) && opts[:watch] == false
+            if @ci.isErrored(self, st) && opts[:watch] == false
                 rep = "y"
                 suff=""
                 while rep == "y"
                     rep = GitMaintain::confirm(opts, "see the build log#{suff}")
                     if rep == "y" then
-                        log = @ci.getValidLog(@local_branch, @head)
+                        log = @ci.getValidLog(self, @head)
                         tmp = `mktemp`.chomp()
                         tmpfile = File.open(tmp, "w+")
                         tmpfile.puts(log)
@@ -377,7 +377,7 @@ module GitMaintain
         # Push branch to the stable repo
         def push_stable(opts)
             if (opts[:no_ci] != true && @NO_CI != true) &&
-               @ci.checkValidState(@local_branch, @head) != true then
+               @ci.checkValidState(self, @head) != true then
                 log(:WARNING, "Build is not passed on CI. Skipping push to stable")
                 return
             end
@@ -411,11 +411,11 @@ module GitMaintain
         end
          # Monitor the build status of the stable branch on CI
         def monitor_stable(opts)
-            st = @ci.getStableState(@local_branch, @stable_head)
+            st = @ci.getStableState(self, @stable_head)
             suff=""
             case st
             when "started"
-                suff= " started at #{@ci.getStableTS(@local_branch, @stable_head)}"
+                suff= " started at #{@ci.getStableTS(self, @stable_head)}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
         end

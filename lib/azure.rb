@@ -88,7 +88,7 @@ module GitMaintain
         def getStableTS(br, sha1)
             return getTS(sha1, getBrStableJson())
         end
-        def isErrored(status)
+        def isErrored(br, status)
             # https://docs.microsoft.com/en-us/rest/api/azure/devops/build/builds/list?
             # view=azure-devops-rest-5.1#buildresult
             return status == "failed"

@@ -81,7 +81,7 @@ module GitMaintain
             @cachedJson={}
         end
 
-        def isErrored(status)
+        def isErrored(br, status)
             raise("Unimplemented")
         end
     end
