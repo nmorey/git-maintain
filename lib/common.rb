@@ -2,6 +2,7 @@ $LOAD_PATH.push(BACKPORT_LIB_DIR)
 
 require 'ci'
 require 'travis'
+require 'azure'
 require 'repo'
 require 'branch'
 
