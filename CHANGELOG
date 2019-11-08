@@ -4,6 +4,8 @@
 * Support multiple -V options
 * Factor code to allow multiple CI
 * Basic Azure CI support
+* Fix displayed repos in summary command
+* RDMACore supports multiple CI depending on branches
 
 ------------------
 0.7.0  (2019-05-29)
