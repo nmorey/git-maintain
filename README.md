@@ -258,6 +258,8 @@ Enjoy, and feel free to report bugs, missing features and/or send patches
 
 This is a summary of all the settings that can be set in the git config:
 
+- `maintain.valid-repo`: Remote github repo to test out branches before submitting. Default = `github`
+- `maintain.stable-repo`: Remote stable github repository t submit validated branches and new releases. Default = `stable`
 - `maintain.autofetch`: Enable/Disable auto fetching.  
    Can be overriden by the --[no-]fetch option on the CLI.  
    If unset, autofetch is enabled
