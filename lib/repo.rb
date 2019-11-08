@@ -338,8 +338,8 @@ module GitMaintain
         end
         def summary(opts)
              log(:INFO, "Configuration summary:")
-             log(:INFO, "Stable remote: #{@@STABLE_REPO}")
-             log(:INFO, "Validation remote: #{@@VALID_REPO}")
+             log(:INFO, "Stable remote: #{@stable_repo}")
+             log(:INFO, "Validation remote: #{@valid_repo}")
              log(:INFO, "")
              log(:INFO, "Branch config:")
              log(:INFO, "Local branch format: /#{@branch_format_raw}/")
