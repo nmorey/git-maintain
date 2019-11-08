@@ -1,7 +1,7 @@
 module GitMaintain
     class RDMACoreBranch < Branch
         REPO_NAME = "rdma-core"
-        AZURE_MIN_VERSION = 27
+        AZURE_MIN_VERSION = 25
 
         def self.set_opts(action, optsParser, opts)
             opts[:rel_type] = nil
@@ -121,7 +121,7 @@ mv debian/changelog.new debian/changelog")
     end
 
     class RDMACoreCI < CI
-        AZURE_MIN_VERSION = 27
+        AZURE_MIN_VERSION = 25
         def initialize(repo)
             super(repo)
             @travis = GitMaintain::TravisCI.new(repo)
