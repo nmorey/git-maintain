@@ -125,7 +125,7 @@ mv debian/changelog.new debian/changelog")
         def initialize(repo)
             super(repo)
             @travis = GitMaintain::TravisCI.new(repo)
-            @azure = GitMaintain::AzureCI.new(repo, 'ucfconsort')
+            @azure = GitMaintain::AzureCI.new(repo, 'ucfconsort', 'ucfconsort')
 
             # Auto generate all CI required methods
             # Wicked ruby tricker to find all the public methods of CI but not of inherited classes
