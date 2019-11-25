@@ -13,8 +13,8 @@ module GitMaintain
         def getState(sha1, resp)
             br = findBranch(sha1, resp)
             return "not found" if br == nil
-
-            return br["result"]
+            return "running" if br["result"] == nil
+            return br["result"].to_s()
         end
         def getLog(sha1, resp)
             str=""
@@ -37,7 +37,8 @@ module GitMaintain
             return br["started_at"]
         end
         def checkState(sha1, resp)
-            return getState(sha1, resp) == "passed"
+            st = getState(sha1, resp)
+            return  st == "passed"  || st == "succeeded"
         end
 
         def getBrValidJson()
