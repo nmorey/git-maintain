@@ -110,6 +110,7 @@ mv debian/changelog.new debian/changelog")
         end
     end
     class RDMACoreRepo < Repo
+        AZURE_MIN_VERSION = 25
         def submitReleases(opts, new_tags)
             new_tags.each(){|tag|
                 next if tag !~ /v([0-9]*)\.[0-9]*/
