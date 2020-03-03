@@ -56,6 +56,7 @@ module GitMaintain
             opts[:check_only] = false
             opts[:fetch] = nil
             opts[:watch] = false
+            opts[:delete_remote] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
@@ -79,6 +80,9 @@ module GitMaintain
                 optsParser.banner += "-c <sha1> [-c <sha1> ...]"
                 optsParser.on("-c", "--sha1 [SHA1]", String, "Commit to cherry-pick. Can be used multiple time.") {
                     |val| opts[:commits] << val}
+            when :delete
+                optsParser.on("--remote", "Delete the remote staging branch instead of the local ones.") {
+                    |val| opts[:delete_remote] = true}
             when :merge
                 optsParser.banner += "-m <suffix>"
                 optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
@@ -112,7 +116,7 @@ module GitMaintain
                     raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
                 end
             end
-            if opts[:action] == :delete then
+            if opts[:action] == :delete && opts[:delete_remote] != true then
                 if opts[:br_suff] == "master" then
                     raise "Action #{opts[:action]} can NOT be done on 'master' suffixed branches"
                 end
@@ -447,12 +451,34 @@ module GitMaintain
         end
 
         def delete(opts)
-            rep = GitMaintain::confirm(opts, "delete branch #{@local_branch}")
+            if opts[:delete_remote] == true then
+                msg = "delete remote branch #{@repo.valid_repo}/#{@local_branch}"
+            else
+                msg = "delete branch #{@local_branch}"
+            end
+            rep = GitMaintain::confirm(opts, msg)
             if rep == "y" then
-                @repo.runGit("branch -D #{@local_branch}")
+                return @local_branch
             else
                 log(:INFO, "Skipping deletion")
                 return
+            end
+        end
+        def self.delete_epilogue(opts, branches)
+            # Compact to remove empty entries
+            branches.compact!()
+
+            return if branches.length == 0
+            puts "Deleting #{opts[:delete_remote] == true ? "remote" : "local"} branches: #{branches.join(" ")}"
+            rep = GitMaintain::confirm(opts, "continue")
+            if rep != "y" then
+                log(:INFO, "Cancelling")
+                return
+            end
+            if opts[:delete_remote] == true then
+                opts[:repo].runGit("push #{opts[:repo].valid_repo} #{branches.map(){|x| ":" + x}.join(" ")}")
+            else
+                opts[:repo].runGit("branch -D  #{branches.join(" ")}")
             end
         end
 

@@ -6,6 +6,7 @@
 * Basic Azure CI support
 * Fix displayed repos in summary command
 * RDMACore supports multiple CI depending on branches
+* Add --remote option to 'delete' command to remove upstream staging branches
 
 ------------------
 0.7.0  (2019-05-29)
