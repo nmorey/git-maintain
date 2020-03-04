@@ -1,3 +1,7 @@
+------------------
+0.8.0  (2020-03-04)
+------------------
+
 * Drop dependency to github-release
 * Add cache for git config
 * Fixes for the steal command
