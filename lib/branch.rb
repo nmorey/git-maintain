@@ -452,6 +452,11 @@ module GitMaintain
 
         def delete(opts)
             if opts[:delete_remote] == true then
+                @repo.runGit("rev-parse --verify --quiet #{@repo.valid_repo}/#{@local_branch}")
+                if $? != 0 then
+                    log(:DEBUG, "Skipping non existing remote braqnch #{@local_branch}.")
+                    return
+                end
                 msg = "delete remote branch #{@repo.valid_repo}/#{@local_branch}"
             else
                 msg = "delete branch #{@local_branch}"
