@@ -381,14 +381,14 @@ module GitMaintain
 
         # Push branch to the stable repo
         def push_stable(opts)
-            if (opts[:no_ci] != true && @NO_CI != true) &&
-               @ci.checkValidState(self, @head) != true then
-                log(:WARNING, "Build is not passed on CI. Skipping push to stable")
+            if same_sha?(@local_branch, @remote_ref) then
+                log(:INFO, "Stable is already up-to-date")
                 return
             end
 
-            if same_sha?(@local_branch, @remote_ref) then
-                log(:INFO, "Stable is already up-to-date")
+            if (opts[:no_ci] != true && @NO_CI != true) &&
+               @ci.checkValidState(self, @head) != true then
+                log(:WARNING, "Build is not passed on CI. Skipping push to stable")
                 return
             end
 
