@@ -245,10 +245,6 @@ module GitMaintain
                 mail.puts `git show #{tag} --no-decorate -q | awk '!p;/^-----END PGP SIGNATURE-----/{p=1}'`
                 mail.puts ""
             }
-            mail.puts "It's available at the normal places:"
-            mail.puts ""
-            mail.puts "git://github.com/#{@remote_stable}"
-            mail.puts "https://github.com/#{@remote_stable}/releases"
             mail.close()
 
             case @mail_format
@@ -320,7 +316,7 @@ module GitMaintain
             end
 
             log(:WARNING, "This will officially release these tags: #{new_tags.join(", ")}")
-            rep = GitMaintain::confirm(opts, "release them")
+            rep = GitMaintain::confirm(opts, "release them", true)
             if rep != 'y' then
                 raise "Aborting.."
             end
@@ -330,7 +326,7 @@ module GitMaintain
             end
 
             log(:WARNING, "Last chance to cancel before submitting")
-            rep= GitMaintain::confirm(opts, "submit these releases")
+            rep= GitMaintain::confirm(opts, "submit these releases", true)
             if rep != 'y' then
                 raise "Aborting.."
             end

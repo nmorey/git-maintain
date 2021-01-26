@@ -11,7 +11,7 @@ $LOAD_PATH.pop()
 
 opts = {
     :br_suff => "master",
-    :no => false,
+    :yn_default => nil,
 }
 
 actionParser = OptionParser.new(nil, 60)
@@ -44,7 +44,9 @@ optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; ex
 optsParser.on("-b", "--branch-suffix [SUFFIX]", "Branch suffix. Default is 'master'.") {
     |val| opts[:br_suff] = val}
 optsParser.on("-n", "--no", "Assume no to all questions.") {
-    |val| opts[:no] = true}
+    |val| opts[:yn_default] = :no}
+optsParser.on("-y", "--yes", "Assume yes to all questions.") {
+    |val| opts[:yn_default] = :yes}
 optsParser.on("--verbose", "Displays more informations.") {
     |val| GitMaintain::setVerbose(true)}
 GitMaintain::setOpts(action, optsParser, opts)

@@ -138,13 +138,17 @@ module GitMaintain
     end
     module_function :execAction
 
-    def confirm(opts, msg)
+    def confirm(opts, msg, ignore_default=false)
         rep = 't'
         while rep != "y" && rep != "n" && rep != '' do
             puts "Do you wish to #{msg} ? (y/N): "
-            if opts[:no] == true then
+            case (ignore_default == true ? nil : opts[:yn_default])
+            when :no
                 puts "Auto-replying no due to --no option"
                 rep = 'n'
+            when :yes
+                puts "Auto-replying yes due to --yes option"
+                rep = 'y'
             else
                 rep = STDIN.gets.chomp()
             end

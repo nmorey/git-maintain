@@ -476,7 +476,7 @@ module GitMaintain
 
             return if branches.length == 0
             puts "Deleting #{opts[:delete_remote] == true ? "remote" : "local"} branches: #{branches.join(" ")}"
-            rep = GitMaintain::confirm(opts, "continue")
+            rep = GitMaintain::confirm(opts, "continue", true)
             if rep != "y" then
                 log(:INFO, "Cancelling")
                 return
@@ -613,13 +613,18 @@ module GitMaintain
 		    puts @repo.getCommitHeadline(commit)
 		    while rep != "y" do
 			    puts "Do you want to steal this commit ? (y/n/b/?)"
-                if opts[:no] == true then
+                case opts[:yn_default]
+                when :no
                     log(:INFO, "Auto-replying no due to --no option")
                     rep = 'n'
                     break
+                when :yes
+                    log(:INFO, "Auto-replying yes due to --yes option")
+                    rep = 'y'
                 else
                     rep = STDIN.gets.chomp()
                 end
+
 			    case rep
 				when "n"
 			        log(:INFO, "Skip this commit")
