@@ -16,8 +16,14 @@ module GitMaintain
         end
         def self.check_opts(opts)
             if opts[:action] == :release then
-                if opts[:rel_type] == nil then
+                case opts[:rel_type]
+                when nil
                     raise "No release type specified use --stable or --major"
+                when :major
+                    if opts[:manual_branch] == nil then
+                        GitMaintain::log(:INFO, "Major release selected. Auto-forcing branch to master")
+                        opts[:manual_branch] = "master"
+                    end
                 end
             end
         end
