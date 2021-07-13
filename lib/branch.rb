@@ -52,7 +52,7 @@ module GitMaintain
             opts[:do_merge] = false
             opts[:push_force] = false
             opts[:no_ci] = false
-            opts[:all] = false
+            opts[:steal_base] = nil
             opts[:check_only] = false
             opts[:fetch] = nil
             opts[:watch] = false
@@ -102,10 +102,13 @@ module GitMaintain
                 optsParser.on("-c", "--check", "Check if there is something to be pushed.") {
                     |val| opts[:check_only] = true}
             when :steal
-                optsParser.banner += "[-a]"
+                optsParser.banner += "[-a][-b <HEAD>]"
                 optsParser.on("-a", "--all", "Check all commits from master. "+
                                                "By default only new commits (since last successful run) are considered.") {
-                    |val| opts[:all] = true}
+                    |val| opts[:steal_base] = :all}
+                optsParser.on("-b", "--base <HEAD>", "Check all commits from this commit. "+
+                                               "By default only new commits (since last successful run) are considered.") {
+                    |val| opts[:steal_base] = val}
             end
         end
 
@@ -266,13 +269,23 @@ module GitMaintain
 
             # If we are not force checking everything,
             # try to start from the last tag we steal upto
-            if opts[:all] != true then
-                sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
-                if $? == 0 then
-                    base_ref=sha
-                    log(:VERBOSE, "Starting from last successfull run:")
-                    log(:VERBOSE, @repo.getCommitHeadline(base_ref))
-                end
+            case opts[:steal_base]
+                when nil
+                    sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
+                    if $? == 0 then
+                        base_ref=sha
+                        log(:VERBOSE, "Starting from last successfull run:")
+                        log(:VERBOSE, @repo.getCommitHeadline(base_ref))
+                    end
+                when :all
+                    base_ref=@stable_base
+                else
+                    sha = @repo.runGit("rev-parse #{opts[:steal_base]} 2>&1")
+                    if $? == 0 then
+                        base_ref=sha
+                        log(:VERBOSE, "Starting from base:")
+                        log(:VERBOSE, @repo.getCommitHeadline(base_ref))
+                    end
             end
 
             master_sha=@repo.runGit("rev-parse origin/master")
