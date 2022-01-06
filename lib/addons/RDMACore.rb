@@ -71,9 +71,12 @@ module GitMaintain
             tag_file.puts `git log HEAD ^#{git_prev_ver} --no-merges --format='   * %s'`
             tag_file.close()
 
+            edit_flag = ""
+            edit_flag = "--edit" if opts[:no_edit] == false
+
             if opts[:rel_type] == :major
                 # For major, tag the current version first
-                @repo.runGitInteractive("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
+                @repo.runGitInteractive("tag -a -s v#{rel_ver} #{edit_flag} -F #{tag_path}")
                 if $? != 0 then
                     raise("Failed to tag branch #{local_branch}")
                 end
@@ -101,13 +104,13 @@ mv debian/changelog.new debian/changelog")
 
             # Add and commit
             @repo.runGit("add  */*.spec CMakeLists.txt debian/changelog")
-            @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose --edit --signoff")
+            @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose #{edit_flag} --signoff")
             if $? != 0 then
                 raise("Failed to commit on branch #{local_branch}")
             end
 
             if opts[:rel_type] == :stable
-                @repo.runGitInteractive("tag -a -s v#{rel_ver} --edit -F #{tag_path}")
+                @repo.runGitInteractive("tag -a -s v#{rel_ver} #{edit_flag} -F #{tag_path}")
                 if $? != 0 then
                     raise("Failed to tag branch #{local_branch}")
                 end

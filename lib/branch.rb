@@ -57,6 +57,7 @@ module GitMaintain
             opts[:fetch] = nil
             opts[:watch] = false
             opts[:delete_remote] = false
+            opts[:no_edit] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
@@ -101,6 +102,9 @@ module GitMaintain
                     |val| opts[:no_ci] = true}
                 optsParser.on("-c", "--check", "Check if there is something to be pushed.") {
                     |val| opts[:check_only] = true}
+            when :release
+                 optsParser.on("--no-edit", "Do not edit release commit nor tag.") {
+                     opts[:no_edit] = true }
             when :steal
                 optsParser.banner += "[-a][-b <HEAD>]"
                 optsParser.on("-a", "--all", "Check all commits from master. "+

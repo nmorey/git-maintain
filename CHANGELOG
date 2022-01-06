@@ -1,6 +1,7 @@
 * Do not push branches already in stable to valid repository
 * Add --yes support
 * Add --base option for 'steal' command
+* Add --no-edit option for 'release' command
 
 ------------------
 0.8.0  (2020-03-04)
