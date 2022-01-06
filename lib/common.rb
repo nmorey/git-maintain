@@ -159,7 +159,7 @@ module GitMaintain
 
     def checkLog(opts, br1, br2, action_msg)
         puts "Diff between #{br1} and #{br2}"
-        puts `git shortlog #{br1} ^#{br2}`
+        puts `git log --format=oneline #{br1} ^#{br2}`
         return "n" if action_msg.to_s() == ""
         rep = confirm(opts, "#{action_msg} this branch")
         return rep
