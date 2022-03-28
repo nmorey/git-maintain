@@ -14,7 +14,7 @@ module GitMaintain
             :list_suffixes, :submit_release
         ]
         ACTION_HELP = {
-            :submit_release => "Push the to stable and create the release packages",
+            :submit_release => "Push the tags to 'stable' remote and create the release packages",
             :summary => "Displays a summary of the configuration and the branches git-maintain sees"
         }
 
