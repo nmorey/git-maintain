@@ -13,14 +13,14 @@ opts = {
     :br_suff => "master",
     :yn_default => nil,
 }
-
+ACTION_HELPS = GitMaintain::getActionAttr("ACTION_HELP")
 actionParser = OptionParser.new(nil, 60)
 actionParser.banner = "Usage: #{__FILE__} <action> [action options]"
 actionParser.separator ""
 actionParser.separator "Options:"
 actionParser.on("-h", "--help", "Display usage.") { |val| puts actionParser.to_s; exit 0 }
 actionParser.separator "Possible actions:"
-GitMaintain::getActionAttr("ACTION_HELP").each(){|k, x|
+ACTION_HELPS.each(){|k, x|
     actionParser.separator "\t * " + k.to_s() + ": " + x
 }
 rest = actionParser.order!(ARGV);
@@ -38,6 +38,7 @@ ARGV.shift()
 
 optsParser = OptionParser.new(nil, 60)
 optsParser.banner = "Usage: #{__FILE__} #{action_s} "
+optsParser.separator "# " + ACTION_HELPS[action]
 optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
