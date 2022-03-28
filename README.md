@@ -282,7 +282,7 @@ This is a summary of all the settings that can be set in the git config:
 Unless otherwise stated, everything in this repo is covered by the following
 copyright notice:
 
-    Copyright (c) 2018 SUSE
+    Copyright (c) 2022 SUSE
 
     This program is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License version 3, as
