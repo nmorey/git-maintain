@@ -94,7 +94,11 @@ module GitMaintain
     module_function :checkDirectConstructor
 
     def getActionAttr(attr)
-        return ACTION_CLASS.map(){|x| x.const_get(attr)}.flatten()
+        if Common.const_get(attr).class == Hash
+            return ACTION_CLASS.inject({}){|h, x| h.merge(x.const_get(attr))}
+        else
+            return ACTION_CLASS.map(){|x| x.const_get(attr)}.flatten()
+        end
     end
     module_function :getActionAttr
 
