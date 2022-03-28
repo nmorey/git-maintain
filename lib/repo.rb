@@ -13,10 +13,10 @@ module GitMaintain
             # Internal commands for completion
             :list_suffixes, :submit_release
         ]
-        ACTION_HELP = [
-            "* submit_release: Push the to stable and create the release packages",
-            "* summary: Displays a summary of the configuration and the branches git-maintain sees"
-        ]
+        ACTION_HELP = {
+            :submit_release => "Push the to stable and create the release packages",
+            :summary => "Displays a summary of the configuration and the branches git-maintain sees"
+        }
 
         def self.load(path=".")
             dir = Dir.pwd()

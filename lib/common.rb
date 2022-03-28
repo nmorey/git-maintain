@@ -44,7 +44,7 @@ end
 module GitMaintain
     class Common
         ACTION_LIST = [ :list_actions ]
-        ACTION_HELP = []
+        ACTION_HELP = {}
         def self.execAction(opts, action)
             puts GitMaintain::getActionAttr("ACTION_LIST").join("\n")
         end
