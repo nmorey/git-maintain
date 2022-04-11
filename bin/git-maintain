@@ -38,7 +38,7 @@ ARGV.shift()
 
 optsParser = OptionParser.new(nil, 60)
 optsParser.banner = "Usage: #{__FILE__} #{action_s} "
-optsParser.separator "# " + ACTION_HELPS[action]
+optsParser.separator "# " + ACTION_HELPS[action].to_s()
 optsParser.separator ""
 optsParser.separator "Options:"
 optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
