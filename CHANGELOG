@@ -3,6 +3,8 @@
 * Add --base option for 'steal' command
 * Add --no-edit option for 'release' command
 * Enhance subcommands help/usage
+* RDMACore updates
+* Allow 'steal' to restart from a given SHA1
 
 ------------------
 0.8.0  (2020-03-04)
