@@ -19,6 +19,6 @@ Gem::Specification.new do |s|
   ]
   s.homepage    =
     'https://github.com/nmorey/git-maintain'
-  s.license       = 'GPLv3'
+  s.license       = 'GPL-3.0'
   s.add_dependency 'octokit', '>= 3.0', '< 5'
 end
