@@ -8,6 +8,12 @@ script:
 - "./bin/git-maintain --help"
 - "gem build git-maintain.gemspec"
 deploy:
+  - provider: rubygems
+    api_key:
+      secure: Low7xMZFQnHmlwme4/3YK+9sCgsRaB4VPurYgc1TK3Qhy9ArL1yexk3dqESUBqOyk6oFKhLtvOWxjnldAFqkASF+5m62PANwt4Bb1RGpX5MUsL4/3sYIB37rMpcBytZbK8q8mPMGMGcGNLFqcf7Vz7Hh1ZmUsSejrBmNAT5iX2j8AG3C/fjYQVw3+8ikNO3KZmeG8eVodZzs8abolZy78ogxl0DxEtGnwkbOuTQfbHSPr5Pca+tVl/6GlUr8Ipv5HSKxG1LtiK3pHzhVwXGZLnqKjeXoIi7aRc9OE6/S4UJcn+hkKw9IJgs2vSx+eCLZVC5QGiqEG6nSXFu3epA6F6HJbCWa8XVSzxcDR0aRg7IWaxGebt1viOFgX92bRG/bCaV7pOu1akO6ehUTl7PoxJiSySBnwb9xtW307Y/t/bdPpW5ntKr9VHjU9PVchC0femJoi8rX3HA+r+TxFONPg65Yw9ERbdoGxYoUHVIuNQRcO/Q/O/uu25olfL2plBS2go4t3u9FWLeDXjU3FwTrMI5Lom3Xx7FE9rqiuPJZ0b+zjCFwfcCP6DTY9vNx37vsdEMYjpPFm5wm6jVDz0t03ykavO4fpHxMFPQKCMRWqc6LoiNR6kN3Sl0vLfcHUXHQSveVfL2iFfFpXxgego4vtNpo/cPvFnxCqtsPpvGdTto=
+    on:
+      tags: true
+    gemspec: git-maintain.gemspec
   - provider: releases
     api_key:
       secure: dbYzacAND+Ni61LEu5eJrJRwq4hlWWpmPlUrFR5EOhPvD+MYZpdo2T/HSugVU+BlHb4gaPQbH2xv9o9DJdH7lw5q7dgNpZ/1VGcozVtekAB4sThi1WPGl26sep5wdLro/Gss6lMWX76xDvYeV1Yjpnan7Wi+NjxYh71KYgC1htHw9Mug2+lI9G6w1CRolxygVh1hUPIjh9h7yv+pp9Y+v2DNHPJqnL4MdyNzipGCTrxno7C0/MUTSHnUk/5Ir2tTVsKwrhL+f2jfhF7it8a3w6MTNmzKObQU0YuEdDNg/62FZZqtoGmlqSttee+SEPurz6Wv+vskcHwEw8ZH5NBoJsUcczpEu6/nlSnyUdt/JBz2NZReU7va4othiTXwL+2j3ng+3iViI7QL0zLjJjHcYazqo+pyHmbV7LOKycu12WQnWYujuTGZzYk7s5AzTzp5om8GnkoJxQZSuxyKF7jChc+ByNGnWo0hXCggViFh8gjDKHczSQ1S0yX/VqPQfiURKhKys+1Oe17S9AHSZ24BtYrQdK6aHd6jfoe7NNIFHXeJUCk9eiWYq1/qQbzaVFupCX0En5QUqN1FurICzg1h5IgPn6ULRuWiyAjdLbYP7B8mGlw8H7w2SXGe6RKtswLrg3Y+GIqq/4LuBKDq05ydS3EJvVNyg84zcEKr5U5zAY4=
@@ -17,9 +23,3 @@ deploy:
     on:
       repo: nmorey/git-maintain
       tags: true
-  - provider: rubygems
-    api_key:
-      secure: Low7xMZFQnHmlwme4/3YK+9sCgsRaB4VPurYgc1TK3Qhy9ArL1yexk3dqESUBqOyk6oFKhLtvOWxjnldAFqkASF+5m62PANwt4Bb1RGpX5MUsL4/3sYIB37rMpcBytZbK8q8mPMGMGcGNLFqcf7Vz7Hh1ZmUsSejrBmNAT5iX2j8AG3C/fjYQVw3+8ikNO3KZmeG8eVodZzs8abolZy78ogxl0DxEtGnwkbOuTQfbHSPr5Pca+tVl/6GlUr8Ipv5HSKxG1LtiK3pHzhVwXGZLnqKjeXoIi7aRc9OE6/S4UJcn+hkKw9IJgs2vSx+eCLZVC5QGiqEG6nSXFu3epA6F6HJbCWa8XVSzxcDR0aRg7IWaxGebt1viOFgX92bRG/bCaV7pOu1akO6ehUTl7PoxJiSySBnwb9xtW307Y/t/bdPpW5ntKr9VHjU9PVchC0femJoi8rX3HA+r+TxFONPg65Yw9ERbdoGxYoUHVIuNQRcO/Q/O/uu25olfL2plBS2go4t3u9FWLeDXjU3FwTrMI5Lom3Xx7FE9rqiuPJZ0b+zjCFwfcCP6DTY9vNx37vsdEMYjpPFm5wm6jVDz0t03ykavO4fpHxMFPQKCMRWqc6LoiNR6kN3Sl0vLfcHUXHQSveVfL2iFfFpXxgego4vtNpo/cPvFnxCqtsPpvGdTto=
-    on:
-      tags: true
-    gemspec: git-maintain.gemspec
