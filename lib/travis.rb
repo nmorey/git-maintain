@@ -1,6 +1,6 @@
 module GitMaintain
     class TravisCI < CI
-        TRAVIS_URL='https://api.travis-ci.org/'
+        TRAVIS_URL='https://api.travis-ci.com/'
 
         def initialize(repo)
             super(repo)
