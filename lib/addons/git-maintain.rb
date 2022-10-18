@@ -1,18 +1,47 @@
 module GitMaintain
     class GitMaintainBranch < Branch
         REPO_NAME = "git-maintain"
+        def self.set_opts(action, optsParser, opts)
+            opts[:rel_type] = nil
 
+            case action
+            when :release
+                 optsParser.on("--major [VERSION]", "Release a major version.") {|val|
+                     opts[:rel_type] = :major
+                     opts[:new_ver] = val
+                 }
+                 optsParser.on("--stable", "Release a stable version.") {
+                     opts[:rel_type] = :stable
+                 }
+           end
+        end
+        def self.check_opts(opts)
+            p opts[:new_rel]
+            if opts[:action] == :release then
+                case opts[:rel_type]
+                when nil
+                    raise "No release type specified use --stable or --major"
+                when :major
+                    if opts[:manual_branch] == nil then
+                        GitMaintain::log(:INFO, "Major release selected. Auto-forcing branch to master")
+                        opts[:manual_branch] = "master"
+                    end
+                end
+            end
+        end
         def release(opts)
             prev_ver=@repo.runGit("show HEAD:CHANGELOG | grep -A 1 -- '---------'  | head -n 2 | tail -n 1 | awk '{ print $1}'").chomp()
             ver_nums = prev_ver.split(".")
 
-            if opts[:manual_branch] == nil then
+            if opts[:rel_type] == :stable then
                 new_ver =  (ver_nums[0 .. -2] + [ver_nums[-1].to_i() + 1 ]).join(".")
                 git_prev_ver = "v" + (ver_nums[-1] == "0" ? ver_nums[0 .. -2].join(".") : prev_ver)
-            else
+            elsif opts[:rel_type] == :major then
                 new_ver =  (ver_nums[0 .. -3] + [ver_nums[-2].to_i() + 1 ] + [ "0" ]).join(".")
+                new_ver = opts[:new_ver] if opts[:new_ver] != nil
                 git_prev_ver = "v" + prev_ver
             end
+
 
             changes=@repo.runGit("show HEAD:CHANGELOG |  awk ' BEGIN {count=0} {if ($1 == \"------------------\") count++; if (count == 0) print $0}'")
 
