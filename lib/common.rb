@@ -57,6 +57,7 @@ module GitMaintain
 
     def registerCustom(repo_name, classes)
         raise("Multiple class for repo #{repo_name}") if @@custom_classes[repo_name] != nil
+        classes[:name] = repo_name if classes[:name] == nil
         @@custom_classes[repo_name] = classes
     end
     module_function :registerCustom
@@ -72,6 +73,11 @@ module GitMaintain
         end
     end
     module_function :getClass
+
+    def getCustomClasses()
+        return @@custom_classes
+    end
+    module_function :getCustomClasses
 
     def loadClass(default_class, repo_name, *more)
         @@load_class.push(default_class)

@@ -334,6 +334,9 @@ module GitMaintain
         end
         def summary(opts)
              log(:INFO, "Configuration summary:")
+             if self.class != GitMaintain::Repo then
+                 log(:INFO, "Using custom repo class: #{self.class.to_s()}")
+             end
              log(:INFO, "Stable remote: #{@stable_repo}")
              log(:INFO, "Validation remote: #{@valid_repo}")
              log(:INFO, "")

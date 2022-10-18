@@ -23,6 +23,15 @@ actionParser.separator "Possible actions:"
 ACTION_HELPS.each(){|k, x|
     actionParser.separator "\t * " + k.to_s() + ": " + x
 }
+custom_classes = GitMaintain::getCustomClasses()
+if custom_classes.length > 0 then
+actionParser.separator "Custom repo addons available:"
+custom_classes.each(){|k, x|
+    actionParser.separator "\t * " + k.to_s()
+}
+
+end
+
 rest = actionParser.order!(ARGV);
 if rest.length <= 0 then
     STDERR.puts("Error: No action provided")
