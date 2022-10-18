@@ -5,6 +5,7 @@
 * Enhance subcommands help/usage
 * RDMACore updates
 * Allow 'steal' to restart from a given SHA1
+* Fix Github and Rybygem deployment
 
 ------------------
 0.8.0  (2020-03-04)
