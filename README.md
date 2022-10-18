@@ -225,6 +225,11 @@ To run:
 Once some work has been done, it is time for a new release.
 
 First, unless you're working for the rdma-core repo, you'll need to add your own 'add-on' class to do automatize tyour release process. Please look at 'addons/RDMACore.rb' for an example.
+Addons should be '.rb' file placed either in the same directory as pre-installed addons, or in a directory pointed to by the environment variable GIT_MAINTAIN_ADDON_DIR.
+
+To list available addons, run:
+
+```git maintain -h```
 
 Then all you need to do is create your release(s)
 

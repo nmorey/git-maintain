@@ -1,5 +1,6 @@
 * Fix and extend CI
 * Add addons info in general help and repo summary
+* Add ENV var to point to custom addons
 
 ------------------
 0.9.0  (2022-10-18)
