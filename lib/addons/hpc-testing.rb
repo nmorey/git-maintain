@@ -36,7 +36,7 @@ module GitMaintain
 
             @repo.run("cat <<EOF > NEWS.new
 - hpc-testing #{new_ver}
-#{@repo.runGit("log HEAD ^v0.3.0 --no-merges  --format='  * %s'")}
+#{@repo.runGit("log HEAD ^#{git_prev_ver} --no-merges  --format='  * %s'")}
 $(cat NEWS)
 EOF
 mv NEWS.new NEWS")
