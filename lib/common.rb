@@ -101,49 +101,62 @@ module GitMaintain
 
     def getActionAttr(attr)
         if Common.const_get(attr).class == Hash
-            return ACTION_CLASS.inject({}){|h, x| h.merge(x.const_get(attr))}
+            return ACTION_CLASS.inject({}){|h, x| h.merge(getClass(x).const_get(attr))}
         else
-            return ACTION_CLASS.map(){|x| x.const_get(attr)}.flatten()
+            return ACTION_CLASS.map(){|x| getClass(x).const_get(attr)}.flatten()
         end
     end
     module_function :getActionAttr
 
     def setOpts(action, optsParser, opts)
          ACTION_CLASS.each(){|x|
-            next if x::ACTION_LIST.index(action) == nil
-            if x.singleton_methods().index(:set_opts) != nil then
+            if x::ACTION_LIST.index(action) != nil &&
+               x.singleton_methods().index(:set_opts) != nil then
+                matched=true
                 x.set_opts(action, optsParser, opts)
             end
             # Try to add repo specific opts
             y = getClass(x)
-            if x != y && y.singleton_methods().index(:set_opts) != nil then
+            if x != y && y::ACTION_LIST.index(action) != nil &&
+               y.singleton_methods().index(:set_opts) != nil then
+                matched=true
                 y.set_opts(action, optsParser, opts)
             end
-            break
+            break if matched == true
         }
     end
     module_function :setOpts
 
     def checkOpts(opts)
         ACTION_CLASS.each(){|x|
-            next if x::ACTION_LIST.index(opts[:action]) == nil
-            next if x.singleton_methods().index(:check_opts) == nil
-            x.check_opts(opts)
+            if x::ACTION_LIST.index(opts[:action]) != nil &&
+               x.singleton_methods().index(:check_opts) != nil then
+                matched=true
+                x.check_opts(opts)
+            end
 
             # Try to add repo specific opts
             y = getClass(x)
-            if x != y && y.singleton_methods().index(:check_opts) != nil then
+            if x != y && y::ACTION_LIST.index(opts[:action]) != nil &&
+               y.singleton_methods().index(:check_opts) != nil then
+                matched=true
                 y.check_opts(opts)
             end
-        }
+            break if matched == true
+       }
     end
     module_function :checkOpts
 
     def execAction(opts, action)
         ACTION_CLASS.each(){|x|
-            next if x::ACTION_LIST.index(action) == nil
-            x.execAction(opts, action)
-            break
+            if x::ACTION_LIST.index(action) != nil
+                return x.execAction(opts, action)
+            end
+           # Try to add repo specific opts
+            y = getClass(x)
+            if x != y && y::ACTION_LIST.index(opts[:action]) != nil then
+                return y.execAction(opts, action)
+            end
         }
     end
     module_function :execAction
