@@ -120,6 +120,11 @@ mv debian/changelog.new debian/changelog")
     end
     class RDMACoreRepo < Repo
         AZURE_MIN_VERSION = 18
+        ACTION_LIST = Repo::ACTION_LIST + [ :create_stable ]
+        ACTION_HELP = {
+            :create_stable => "Create a stable branch from a release tag"
+        }.merge(Repo::ACTION_HELP)
+
         def submitReleases(opts, new_tags)
             new_tags.each(){|tag|
                 next if tag !~ /v([0-9]*)\.[0-9]*/
@@ -127,6 +132,39 @@ mv debian/changelog.new debian/changelog")
                 # Starting from v27, do not create the github release ourself as this is done by Azure
                 createRelease(opts, tag, major < AZURE_MIN_VERSION)
             }
+        end
+
+        def self.set_opts(action, optsParser, opts)
+            case action
+            when :create_stable then
+                optsParser.on("-V", "--version [NUM]", Integer,
+                              "Specify which version to use to create the stable branch.") {
+                |val| opts[:version] = val}
+            end
+        end
+        def self.check_opts(opts)
+            case opts[:action]
+                when :create_stable
+                if opts[:version].to_s() == "" then
+                    raise "Action #{opts[:action]} requires a branch number to be specified"
+                end
+                 if opts[:br_suff] != "master" then
+                    raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
+                end
+           end
+        end
+        def create_stable(opts)
+            ver = opts[:version].to_s()
+            suff = opts[:br_suff]
+            if getBranchList(suff).index(ver) != nil then
+                raise("Local branch already exists for version #{ver}")
+            end
+            br = versionToLocalBranch(ver, suff)
+            full_ver = ver.gsub(/([0-9]+)/, @stable_base_format)
+            runGit("checkout -B #{br} #{full_ver}")
+            toDo=`awk '/\`\`\`/{p=!p; next};p' Documentation/stable.md`.chomp().split("\n").join("&&")
+            runSystem(toDo)
+            raise("Fail to run stable creation code") if $? != 0
         end
     end
 
