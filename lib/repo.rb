@@ -141,8 +141,8 @@ module GitMaintain
             return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null").chomp()
         end
 
-        def runBash()
-            runSystem("bash")
+        def runBash(env="")
+            runSystem(env + " bash")
             if $? == 0 then
                 log(:INFO, "Continuing...")
             else

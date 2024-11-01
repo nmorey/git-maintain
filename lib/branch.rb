@@ -257,7 +257,7 @@ module GitMaintain
                 @repo.runGitInteractive("cherry-pick #{commit}")
                 if $? != 0 then
                     log(:WARNING, "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue")
-			        @repo.runBash()
+			        @repo.runBash("PS1_WARNING='CP FIX'")
 		        end
                 new_head=@repo.runGit("rev-parse HEAD")
                 # Do not make commit pretty if it was not applied
@@ -340,7 +340,7 @@ module GitMaintain
                 @repo.runGitInteractive("merge #{merge_branch}")
                 if $? != 0 then
                     log(:WARNING, "Merge failure. Starting bash for manual fixes. Exit shell to continue")
-			        @repo.runBash()
+			        @repo.runBash("PS1_WARNING='MERGING'")
 		        end
             else
                 log(:INFO, "Skipping merge")
@@ -709,7 +709,7 @@ module GitMaintain
 		        pick_one(commit)
             rescue CherryPickErrorException => e
 			    log(:WARNING, "Cherry pick failed. Fix, commit (or reset) and exit.")
-			    @repo.runSystem("/bin/bash")
+			    @repo.runBash("PS1_WARNING='CP FIX'")
             end
             new_head=@repo.runGit("rev-parse HEAD")
 
@@ -719,7 +719,7 @@ module GitMaintain
 			    msg="Custom"
 			    orig_cmt=@repo.runGit("rev-parse HEAD")
 			    log(:WARNING, "Custom commit, please double-check!")
-			    @repo.runSystem("/bin/bash")
+			    @repo.runBash("PS1_WARNING='CHECK'")
 		    end
             if new_head != prev_head
 		        make_pretty(orig_cmt, msg)
