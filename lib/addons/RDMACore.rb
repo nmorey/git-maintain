@@ -2,6 +2,10 @@ module GitMaintain
     class RDMACoreBranch < Branch
         REPO_NAME = "rdma-core"
         AZURE_MIN_VERSION = 18
+        ACTION_LIST = Branch::ACTION_LIST + [ :validate ]
+        ACTION_HELP = {
+            :validate => "Validate that branch still builds"
+        }.merge(Branch::ACTION_HELP)
 
         def self.set_opts(action, optsParser, opts)
             opts[:rel_type] = nil
@@ -116,6 +120,10 @@ mv debian/changelog.new debian/changelog")
                 end
             end
             `rm -f #{tag_path}`
+        end
+        def validate(opts)
+            @repo.runSystem("rm -Rf build/ && mkdir build/ && cd build/ && cmake .. && make -j")
+            raise("Validation failure") if $? != 0
         end
     end
     class RDMACoreRepo < Repo
