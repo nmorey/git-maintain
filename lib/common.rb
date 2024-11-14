@@ -120,7 +120,7 @@ module GitMaintain
             if x != y && y::ACTION_LIST.index(action) != nil &&
                y.singleton_methods().index(:set_opts) != nil then
                 matched=true
-                x.set_opts(action, optsParser, opts)
+                x.set_opts(action, optsParser, opts) if x.singleton_methods().index(:set_opts) != nil
                 y.set_opts(action, optsParser, opts)
             end
             break if matched == true
@@ -141,7 +141,7 @@ module GitMaintain
             if x != y && y::ACTION_LIST.index(opts[:action]) != nil &&
                y.singleton_methods().index(:check_opts) != nil then
                 matched=true
-                x.check_opts(opts)
+                x.check_opts(opts) if x.singleton_methods().index(:check_opts) != nil
                 y.check_opts(opts)
             end
             break if matched == true
