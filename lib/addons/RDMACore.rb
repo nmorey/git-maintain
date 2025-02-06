@@ -148,6 +148,9 @@ mv debian/changelog.new debian/changelog")
                 optsParser.on("-V", "--version [NUM]", Integer,
                               "Specify which version to use to create the stable branch.") {
                 |val| opts[:version] = val}
+                optsParser.on("-S", "--skip",
+                              "Skip docker image generation") {
+                |val| opts[:skip_docker] = true}
             end
         end
         def self.check_opts(opts)
@@ -170,7 +173,12 @@ mv debian/changelog.new debian/changelog")
             br = versionToLocalBranch(ver, suff)
             full_ver = ver.gsub(/([0-9]+)/, @stable_base_format)
             runGit("checkout -B #{br} #{full_ver}")
-            toDo=`awk '/\`\`\`/{p=!p; next};p' Documentation/stable.md`.chomp().split("\n").join("&&")
+            cmdList = `awk '/\`\`\`/{p=!p; next};p' Documentation/stable.md`.chomp().split("\n")
+            if opts[:skip_docker] == true then
+                cmdList = cmdList.map(){|x| x if x !~ /build-images/}.compact()
+            end
+
+            toDo=cmdList.join("&&")
             runSystem(toDo)
             raise("Fail to run stable creation code") if $? != 0
         end
