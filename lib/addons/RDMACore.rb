@@ -177,6 +177,8 @@ mv debian/changelog.new debian/changelog")
             if opts[:skip_docker] == true then
                 cmdList = cmdList.map(){|x| x if x !~ /build-images/}.compact()
             end
+            cmdList = cmdList.map(){|x| (x !~ /pkg azp/) ? x : (x + " || true") }.compact()
+            cmdList << "./buildlib/cbuild pkg azp"
 
             toDo=cmdList.join("&&")
             runSystem(toDo)
