@@ -10,16 +10,15 @@ module GitMaintain
 
     class Branch
         ACTION_LIST = [
-            :cp, :steal, :list, :list_stable,
+            :cp, :steal, :list,
             :merge, :push, :monitor,
-            :push_stable, :monitor_stable,
             :release, :reset, :create, :delete
         ]
         NO_FETCH_ACTIONS = [
             :cp, :merge, :monitor, :release, :delete
         ]
         NO_CHECKOUT_ACTIONS = [
-            :create, :delete, :list, :list_stable, :push, :monitor, :monitor_stable
+            :create, :delete, :list, :push, :monitor
         ]
         ALL_BRANCHES_ACTIONS = [
             :create
@@ -30,12 +29,9 @@ module GitMaintain
             :delete => "Delete all local branches using the suffix",
             :steal => "Steal commit from upstream that fixes commit in the branch or were tagged as stable",
             :list => "List commit present in the branch but not in the stable branch",
-            :list_stable => "List commit present in the stable branch but not in the latest associated relase",
             :merge => "Merge branch with suffix specified in -m <suff> into the main branch",
             :push => "Push branches to github for validation",
             :monitor => "Check the CI state of all branches",
-            :push_stable => "Push to stable repo",
-            :monitor_stable => "Check the CI state of all stable branches",
             :release => "Create new release on all concerned branches",
             :reset => "Reset branch against upstream",
         }
@@ -58,6 +54,7 @@ module GitMaintain
             opts[:watch] = false
             opts[:delete_remote] = false
             opts[:no_edit] = false
+            opts[:stable] = false
 
             optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
                 |val| opts[:base_ver] = val}
@@ -84,27 +81,33 @@ module GitMaintain
             when :delete
                 optsParser.on("--remote", "Delete the remote staging branch instead of the local ones.") {
                     |val| opts[:delete_remote] = true}
+            when :list
+                 optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
+                     opts[:stable] = true }
             when :merge
                 optsParser.banner += "-m <suffix>"
                 optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
                     |val| opts[:do_merge] = val}
-            when :monitor, :monitor_stable
+            when :monitor
                 optsParser.on("-w", "--watch <PERIOD>", Integer,
                               "Watch and refresh CI status every <PERIOD>.") {
                     |val| opts[:watch] = val}
+                 optsParser.on("--stable", "Check CI status on stable repo.") {
+                     opts[:stable] = true }
             when :push
                 optsParser.banner += "[-f]"
                 optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
-                    |val| opts[:push_force] = val}
-            when :push_stable
+                    opts[:push_force] = true}
+                optsParser.on("--stable", "Push to stable repo.") {
+                     opts[:stable] = true }
                 optsParser.banner += "[-T]"
                 optsParser.on("-T", "--no-ci", "Ignore CI build status and push anyway.") {
-                    |val| opts[:no_ci] = true}
+                    opts[:no_ci] = true}
                 optsParser.on("-c", "--check", "Check if there is something to be pushed.") {
-                    |val| opts[:check_only] = true}
+                    opts[:check_only] = true}
             when :release
-                 optsParser.on("--no-edit", "Do not edit release commit nor tag.") {
-                     opts[:no_edit] = true }
+                optsParser.on("--no-edit", "Do not edit release commit nor tag.") {
+                    opts[:no_edit] = true }
             when :steal
                 optsParser.banner += "[-a][-b <HEAD>]"
                 optsParser.on("-a", "--all", "Check all commits from master. "+
@@ -117,8 +120,7 @@ module GitMaintain
         end
 
         def self.check_opts(opts)
-            if opts[:action] == :push_stable ||
-               opts[:action] == :release then
+               if opts[:action] == :release then
                 if opts[:br_suff] != "master" then
                     raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
                 end
@@ -126,6 +128,11 @@ module GitMaintain
             if opts[:action] == :delete && opts[:delete_remote] != true then
                 if opts[:br_suff] == "master" then
                     raise "Action #{opts[:action]} can NOT be done on 'master' suffixed branches"
+                end
+            end
+            if opts[:action] == :push
+                if opts[:stable] == true && opts[:push_force] == true then
+                    raise "Action push  can NOT be use both --stable and --force"
                 end
             end
             opts[:version] = [ /.*/ ] if opts[:version].length == 0
@@ -214,6 +221,7 @@ module GitMaintain
             end
 
             @head          = @repo.runGit("rev-parse --verify --quiet #{@local_branch}")
+            @valid_ref     = "#{@repo.valid_repo}/#{@remote_branch}"
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
             @stable_head   = @repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
             case @branch_type
@@ -223,7 +231,7 @@ module GitMaintain
                 @stable_base   = @remote_ref
             end
         end
-        attr_reader :version, :local_branch, :head, :remote_branch, :remote_ref, :stable_head,
+        attr_reader :version, :local_branch, :head, :remote_branch, :valid_ref, :remote_ref, :stable_head,
                     :verbose_name, :exists, :stable_base
 
         def log(lvl, str)
@@ -305,16 +313,15 @@ module GitMaintain
             end
         end
 
-        # List commits in the branch that are no in the stable branch
         def list(opts)
             GitMaintain::log(:INFO, "Working on #{@verbose_name}")
-            GitMaintain::showLog(opts, @local_branch, @remote_ref)
-        end
-
-        # List commits in the stable_branch that are no in the latest release
-        def list_stable(opts)
-            GitMaintain::log(:INFO, "Working on #{@verbose_name}")
-            GitMaintain::showLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"))
+            if opts[:stable] == true then
+                # List commits in the stable_branch that are no in the latest release
+                GitMaintain::showLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"))
+            else
+                # List commits in the branch that are no in the stable branch
+                GitMaintain::showLog(opts, @local_branch, @remote_ref)
+            end
         end
 
         # Merge merge_branch into this one
@@ -350,12 +357,41 @@ module GitMaintain
 
         # Push the branch to the validation repo
         def push(opts)
-            if same_sha?(@local_branch, @repo.valid_repo + "/" + @local_branch) ||
+            remoteRef = opts[:stable] == true ? @remote_ref : @valid_ref
+
+            # Check both where we want to push and the final remote_ref
+            # We may have destroyed the validation branch but if we already merged
+            # in the final repo, no need to worry about it.
+            if same_sha?(@local_branch, remoteRef) ||
                same_sha?(@local_branch, @remote_ref) then
                 log(:INFO, "Nothing to push on #{@local_branch}")
                 return
             end
-            return "#{@local_branch}:#{@local_branch}"
+
+            # For stable branches, we need to check for CI
+            if opts[:stable] == true &&
+               (opts[:no_ci] != true && @NO_CI != true) &&
+               @ci.checkValidState(self, @head) != true then
+                log(:WARNING, "Build is not passed on CI. Skipping push to stable")
+                return
+            end
+
+            if opts[:check_only] == true then
+                GitMaintain::checkLog(opts, @local_branch, @remote_ref, "")
+                return
+            end
+
+            # For validation/CI push, let's go and push already
+            return "#{@local_branch}:#{@local_branch}" if opts[:stable] != true
+
+            # For stable, we need to confirm with the user that he really wants to push
+            rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "submit")
+            if rep == "y" then
+                return "#{@local_branch}:#{@remote_branch}"
+            else
+                log(:INFO, "Skipping push to stable")
+                return
+            end
         end
 
         def self.push_epilogue(opts, branches)
@@ -364,17 +400,26 @@ module GitMaintain
 
             return if branches.length == 0
 
+            repo = opts[:stable] == true ? @opts[:repo].stable_repo : @opts[:repo].valid_repo
             opts[:repo].runGit("push #{opts[:push_force] == true ? "-f" : ""} "+
-                               "#{opts[:repo].valid_repo} #{branches.join(" ")}")
+                               "#{repo} #{branches.join(" ")}")
         end
 
         # Monitor the build status on CI
         def monitor(opts)
-            st = @ci.getValidState(self, @head)
+            ts = st = head = nil
             suff=""
+            if opts[:stable] == true then
+                st = @ci.getStableState(self, @stable_head)
+                ts = @ci.getStableTS(self, @stable_head) if st == "started"
+            else
+                st = @ci.getValidState(self, @head)
+                ts = @ci.getValidTS(self, @head) if st == "started"
+            end
+
             case st
             when "started"
-                suff= " started at #{@ci.getValidTS(self, @head)}"
+                suff= " at #{ts}"
             end
             log(:INFO, "Status for v#{@version}: " + st + suff)
             if @ci.isErrored(self, st) && opts[:watch] == false
@@ -394,52 +439,6 @@ module GitMaintain
                     suff=" again"
                 end
             end
-        end
-
-        # Push branch to the stable repo
-        def push_stable(opts)
-            if same_sha?(@local_branch, @remote_ref) then
-                log(:INFO, "Stable is already up-to-date")
-                return
-            end
-
-            if (opts[:no_ci] != true && @NO_CI != true) &&
-               @ci.checkValidState(self, @head) != true then
-                log(:WARNING, "Build is not passed on CI. Skipping push to stable")
-                return
-            end
-
-            if opts[:check_only] == true then
-                GitMaintain::checkLog(opts, @local_branch, @remote_ref, "")
-                return
-            end
-
-            rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "submit")
-            if rep == "y" then
-                return "#{@local_branch}:#{@remote_branch}"
-            else
-                log(:INFO, "Skipping push to stable")
-                return
-            end
-        end
-
-
-        def self.push_stable_epilogue(opts, branches)
-            # Compact to remove empty entries
-            branches.compact!()
-
-            return if branches.length == 0
-            opts[:repo].runGit("push #{opts[:repo].stable_repo} #{branches.join(" ")}")
-        end
-         # Monitor the build status of the stable branch on CI
-        def monitor_stable(opts)
-            st = @ci.getStableState(self, @stable_head)
-            suff=""
-            case st
-            when "started"
-                suff= " started at #{@ci.getStableTS(self, @stable_head)}"
-            end
-            log(:INFO, "Status for v#{@version}: " + st + suff)
         end
 
         # Reset the branch to the upstream stable one

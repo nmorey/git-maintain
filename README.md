@@ -13,12 +13,9 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 - **delete**: Delete all local branches using the suffix
 - **steal**: Steal commit from upstream that fixes commit in the branch or were tagged as stable
 - **list**: List commit present in the branch but not in the stable branch
-- **list_stable**: List commit present in the stable branch but not in the latest associated relase
 - **merge**: Merge branch with suffix specified in -m <suff> into the main branch
 - **push**: Push branches to github for validation
 - **monitor**: Check the CI state of all branches
-- **push_stable**: Push to stable repo
-- **monitor_stable**: Check the CI state of all stable branches
 - **release**: Create new release on all concerned branches
 - **reset**: Reset branch against upstream
 - **submit_release**: Push the to stable and create the release packages
@@ -167,7 +164,7 @@ Some time later, check their status
 
 If everything looks good, push to the stable repo
 
-```git maintain push_stable --version '1[789]'```
+```git maintain push --stable --version '1[789]'```
 
 If patches have been sent to the ML but are not yet accepted, I usually try them out on a "pending" branch.
 
@@ -237,16 +234,16 @@ Then all you need to do is create your release(s)
 
 This will run your addon code. What you usually want to do in there is create a tag and eventually bump version numbers, add releases notes, etc.
 
-I strongly advise here to then use the 'push_stable' command. It will update the branches, but NOT push the tag.
+I strongly advise here to then use the 'push --stable' command. It will update the branches, but NOT push the tag.
 This means that if something has been broken by the release commit (if any), there is still time to fix it.
 
 The tag will not have been propagated anywhere else and can be deleted manually.
 
-```git maintain push_stable --version '1[789]'```
+```git maintain push --stable --version '1[789]'```
 
 You can then monitor the status on CI
 
-```git maintain monitor_stable --version '1[789]'```
+```git maintain monitor --stable --version '1[789]'```
 
 
 Once everything is green, it is time to submit your release

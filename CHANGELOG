@@ -1,6 +1,10 @@
 * Fix and extend CI
 * Add addons info in general help and repo summary
 * Add ENV var to point to custom addons
+* Addons updates
+* Set PS1_WARNING to help dealing with subshell status
+* Azure fixes
+* Remove list_stable, monitor_stable, push_stable commands. Replace with --stable option of the regular ones
 
 ------------------
 0.9.0  (2022-10-18)
