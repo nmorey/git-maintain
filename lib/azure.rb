@@ -34,7 +34,7 @@ module GitMaintain
         def getTS(sha1, resp)
             br = findBranch(sha1, resp)
             raise("Travis build not found") if br == nil
-            return br["started_at"]
+            return br["startTime"]
         end
         def checkState(sha1, resp)
             st = getState(sha1, resp)
