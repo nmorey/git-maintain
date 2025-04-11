@@ -13,7 +13,7 @@ module GitMaintain
         def getState(sha1, resp)
             br = findBranch(sha1, resp)
             return "not found" if br == nil
-            return "running" if br["result"] == nil
+            return "started" if br["result"] == nil
             return br["result"].to_s()
         end
         def getLog(sha1, resp)
