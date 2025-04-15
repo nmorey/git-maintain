@@ -400,7 +400,7 @@ module GitMaintain
 
             return if branches.length == 0
 
-            repo = opts[:stable] == true ? @opts[:repo].stable_repo : @opts[:repo].valid_repo
+            repo = (opts[:stable] == true) ? opts[:repo].stable_repo : opts[:repo].valid_repo
             opts[:repo].runGit("push #{opts[:push_force] == true ? "-f" : ""} "+
                                "#{repo} #{branches.join(" ")}")
         end
