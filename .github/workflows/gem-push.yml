@@ -28,7 +28,7 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby-version }}
     - run: bundle install
-    - name: Publish to RubyGems
+    - name: Build gem
       run: |
         gem build git-maintain.gemspec
 
