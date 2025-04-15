@@ -1,3 +1,5 @@
+* Add github workflow for CI and publishing released rubygems
+
 ------------------
 0.10.0  (2025-04-15)
 ------------------
