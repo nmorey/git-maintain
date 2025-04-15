@@ -221,7 +221,7 @@ module GitMaintain
             end
 
             @head          = @repo.runGit("rev-parse --verify --quiet #{@local_branch}")
-            @valid_ref     = "#{@repo.valid_repo}/#{@remote_branch}"
+            @valid_ref     = "#{@repo.valid_repo}/#{@local_branch}"
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
             @stable_head   = @repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
             case @branch_type
