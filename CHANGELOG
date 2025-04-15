@@ -5,6 +5,7 @@
 * Set PS1_WARNING to help dealing with subshell status
 * Azure fixes
 * Remove list_stable, monitor_stable, push_stable commands. Replace with --stable option of the regular ones
+* Add pull command
 
 ------------------
 0.9.0  (2022-10-18)
