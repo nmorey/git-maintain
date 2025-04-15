@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'git-maintain'
-  s.version     = `git describe`.chomp().gsub(/^v/, "").gsub(/-([0-9]+)-g/, '-\1.g')
+  s.version     = `git describe --tags`.chomp().gsub(/^v/, "").gsub(/-([0-9]+)-g/, '-\1.g')
   s.date        = `git show HEAD --format='format:%ci' -s | awk '{ print $1}'`.chomp()
   s.summary     = "Your ultimate script for maintaining stable branches and releasing your project."
   s.description = "Be lazy and let git-maintain do all the heavy lifting for maintaining stable branches.\n"+
