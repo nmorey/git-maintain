@@ -11,7 +11,7 @@ module GitMaintain
     class Branch
         ACTION_LIST = [
             :cp, :steal, :list,
-            :merge, :push, :monitor,
+            :merge, :pull, :push, :monitor,
             :release, :reset, :create, :delete
         ]
         NO_FETCH_ACTIONS = [
@@ -31,6 +31,7 @@ module GitMaintain
             :list => "List commit present in the branch but not in the stable branch",
             :merge => "Merge branch with suffix specified in -m <suff> into the main branch",
             :push => "Push branches to github for validation",
+            :pull => "Rebase branches on top of the upstream one",
             :monitor => "Check the CI state of all branches",
             :release => "Create new release on all concerned branches",
             :reset => "Reset branch against upstream",
@@ -93,6 +94,9 @@ module GitMaintain
                               "Watch and refresh CI status every <PERIOD>.") {
                     |val| opts[:watch] = val}
                  optsParser.on("--stable", "Check CI status on stable repo.") {
+                     opts[:stable] = true }
+            when :pull
+                 optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
                      opts[:stable] = true }
             when :push
                 optsParser.banner += "[-f]"
@@ -355,6 +359,18 @@ module GitMaintain
             end 
         end
 
+        def pull(opts)
+            remoteRef = opts[:stable] == true ? @remote_ref : @valid_ref
+
+            # Make sure branch exists
+            @repo.runGit("rev-parse --verify --quiet #{remoteRef}")
+            if $? != 0 then
+                log(:INFO, "Branch #{remoteRef} does not exists. Skipping...")
+                return
+            end
+            @repo.runGitInteractive("rebase #{remoteRef}")
+
+        end
         # Push the branch to the validation repo
         def push(opts)
             remoteRef = opts[:stable] == true ? @remote_ref : @valid_ref
