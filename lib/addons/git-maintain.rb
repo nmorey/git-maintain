@@ -16,7 +16,6 @@ module GitMaintain
            end
         end
         def self.check_opts(opts)
-            p opts[:new_rel]
             if opts[:action] == :release then
                 case opts[:rel_type]
                 when nil
