@@ -223,6 +223,12 @@ module GitMaintain
     end
     module_function :log
 
+    def crit(msg)
+        log(:ERROR, msg)
+        raise msg
+    end
+    module_function :crit
+
     def setVerbose(val)
         @@verbose_log = val
     end

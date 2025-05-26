@@ -81,8 +81,9 @@ module GitMaintain
 
             if opts[:rel_type] == :major
                 # For major, tag the current version first
-                @repo.runGitInteractive("tag -a -s v#{rel_ver} #{edit_flag} -F #{tag_path}")
-                if $? != 0 then
+                begin
+                    @repo.runGitInteractive("tag -a -s v#{rel_ver} #{edit_flag} -F #{tag_path}")
+                rescue RuntimeError
                     raise("Failed to tag branch #{local_branch}")
                 end
             end
@@ -108,9 +109,10 @@ mv debian/changelog.new debian/changelog")
             end
 
             # Add and commit
-            @repo.runGit("add  */*.spec CMakeLists.txt debian/changelog")
-            @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose #{edit_flag} --signoff")
-            if $? != 0 then
+            begin
+                @repo.runGit("add  */*.spec CMakeLists.txt debian/changelog")
+                @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose #{edit_flag} --signoff")
+            rescue RuntimeError
                 raise("Failed to commit on branch #{local_branch}")
             end
 
@@ -123,8 +125,11 @@ mv debian/changelog.new debian/changelog")
             `rm -f #{tag_path}`
         end
         def validate(opts)
-            @repo.runSystem("rm -Rf build/ && mkdir build/ && cd build/ && cmake .. && make -j")
-            raise("Validation failure") if $? != 0
+            begin
+                @repo.runSystem("rm -Rf build/ && mkdir build/ && cd build/ && cmake .. && make -j")
+            rescue RuntimeError
+                raise("Validation failure")
+            end
         end
     end
     class RDMACoreRepo < Repo
@@ -182,8 +187,11 @@ mv debian/changelog.new debian/changelog")
             cmdList << "./buildlib/cbuild pkg azp"
 
             toDo=cmdList.join("&&")
-            runSystem(toDo)
-            raise("Fail to run stable creation code") if $? != 0
+            begin
+                runSystem(toDo)
+            rescue RuntimeError
+                raise("Fail to run stable creation code")
+            end
         end
     end
 

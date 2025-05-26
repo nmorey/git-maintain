@@ -115,27 +115,38 @@ module GitMaintain
             GitMaintain::log(lvl, str)
         end
 
-        def run(cmd)
-            return `cd #{@path} && #{cmd}`
+        def run(cmd, check_err = true)
+            ret = `cd #{@path} && #{cmd}`
+            raise(RuntimeError.new(ret)) if $?.exitstatus != 0 && check_err == true
+            return ret
         end
-        def runSystem(cmd)
-            return system("cd #{@path} && #{cmd}")
-        end
+        def runSystem(cmd, check_err = true)
+            ret = system("cd #{@path} && #{cmd}")
+            raise(RuntimeError.new()) if $?.exitstatus != 0 && check_err == true
+            return ret
 
-        def runGit(cmd)
+        end
+        def runGit(cmd, check_err = true)
             log(:DEBUG, "Called from #{caller[1]}")
             log(:DEBUG, "Running git command '#{cmd}'")
-            return `git --work-tree=#{@path} #{cmd}`.chomp()
+            ret = `git --work-tree=#{@path} #{cmd}`.chomp()
+            raise(RuntimeError.new(ret)) if $?.exitstatus != 0 && check_err == true
+            return ret
         end
-        def runGitInteractive(cmd)
+        def runGitInteractive(cmd, check_err = true)
             log(:DEBUG, "Called from #{caller[1]}")
             log(:DEBUG, "Running interactive git command '#{cmd}'")
-            return system("git --work-tree=#{@path} #{cmd}")
+            ret = system("git --work-tree=#{@path} #{cmd}")
+            raise(RuntimeError.new()) if $?.exitstatus != 0 && check_err == true
+            return ret
+
         end
         def ref_exist?(ref)
-            ret = runGit("rev-parse --verify --quiet '#{ref}'")
-            raise(NoRefError.new(rev)) if $? != 0
-            return ret
+            begin
+                return runGit("rev-parse --verify --quiet '#{ref}'")
+            rescue RuntimeError
+                raise(NoRefError.new(rev))
+            end
         end
 
         def runGitImap(cmd)
@@ -148,17 +159,18 @@ module GitMaintain
                   fi; git --work-tree=#{@path} imap-send #{cmd}`
         end
         def getGitConfig(entry)
-            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null").chomp()
+            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null", false).chomp()
         end
 
         def runBash(env="")
-            runSystem(env + " bash")
-            if $? == 0 then
-                log(:INFO, "Continuing...")
-            else
+            begin
+                runSystem(env + " bash")
+            rescue RuntimeError
                 log(:ERROR, "Shell exited with code #{$?}. Exiting")
                 raise("Cancelled by user")
             end
+            log(:INFO, "Continuing...")
+
         end
 
         def getCommitHeadline(sha)
@@ -397,8 +409,11 @@ module GitMaintain
         def find_alts(commit)
             alts=[]
 
-            subj=runGit("log -1 --pretty='%s' #{commit}")
-            return alts if $? != 0
+            begin
+                subj=runGit("log -1 --pretty='%s' #{commit}")
+            rescue RuntimeError
+                return []
+            end
 
             branches = getStableBranchList().map(){|v| @@STABLE_REPO + "/" + versionToStableBranch(v)}
 

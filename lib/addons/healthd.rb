@@ -42,15 +42,16 @@ EOF
 mv CHANGELOG.new CHANGELOG")
 
             # Add and commit
-            @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]\\+/\\1#{new_ver}/g' */*.spec")
-            @repo.runGit("add  CHANGELOG */*.spec")
-
-            @repo.runGitInteractive("commit -F #{tag_path} --verbose --edit --signoff")
-            if $? != 0 then
+            begin
+                @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]\\+/\\1#{new_ver}/g' */*.spec")
+                @repo.runGit("add  CHANGELOG */*.spec")
+                @repo.runGitInteractive("commit -F #{tag_path} --verbose --edit --signoff")
+            rescue RuntimeError
                 raise("Failed to commit on branch #{local_branch}")
             end
-            @repo.runGitInteractive("tag -a -s v#{new_ver} --edit -F #{tag_path}")
-            if $? != 0 then
+            begin
+                @repo.runGitInteractive("tag -a -s v#{new_ver} --edit -F #{tag_path}")
+            rescue RuntimeError
                 raise("Failed to tag branch #{local_branch}")
             end
             `rm -f #{tag_path}`

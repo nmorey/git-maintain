@@ -255,9 +255,10 @@ module GitMaintain
 
         # Checkout the repo to the given branch
         def checkout()
-            print @repo.runGit("checkout -q #{@local_branch}")
-            if $? != 0 then
-                raise "Error: Failed to checkout the branch"
+            begin
+                print @repo.runGit("checkout -q #{@local_branch}")
+            rescue RuntimeError => e
+                crit("Failed to checkout the branch #{@local_branch}")
             end
         end
 
@@ -266,11 +267,12 @@ module GitMaintain
             opts[:commits].each(){|commit|
                 prev_head=@repo.runGit("rev-parse HEAD")
                 log(:INFO, "Applying #{@repo.getCommitHeadline(commit)}")
-                @repo.runGitInteractive("cherry-pick #{commit}")
-                if $? != 0 then
+                begin
+                    @repo.runGitInteractive("cherry-pick #{commit}")
+                rescue RuntimeError
                     log(:WARNING, "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue")
-			        @repo.runBash("PS1_WARNING='CP FIX'")
-		        end
+		    @repo.runBash("PS1_WARNING='CP FIX'")
+		end
                 new_head=@repo.runGit("rev-parse HEAD")
                 # Do not make commit pretty if it was not applied
                 if new_head != prev_head
@@ -287,20 +289,24 @@ module GitMaintain
             # try to start from the last tag we steal upto
             case opts[:steal_base]
                 when nil
-                    sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
-                    if $? == 0 then
+                    begin
+                        sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
                         base_ref=sha
                         log(:VERBOSE, "Starting from last successfull run:")
                         log(:VERBOSE, @repo.getCommitHeadline(base_ref))
+                    rescue RuntimeError
+                        # No matching tag found. Not an issue
                     end
                 when :all
                     base_ref=@stable_base
                 else
-                    sha = @repo.runGit("rev-parse #{opts[:steal_base]} 2>&1")
-                    if $? == 0 then
+                    begin
+                        sha = @repo.runGit("rev-parse #{opts[:steal_base]} 2>&1")
                         base_ref=sha
                         log(:VERBOSE, "Starting from base:")
                         log(:VERBOSE, @repo.getCommitHeadline(base_ref))
+                    rescue RuntimeError
+                        crit("Could not find specified base '#{opts[:steal_base]}'")
                     end
             end
 
@@ -349,11 +355,12 @@ module GitMaintain
 
             rep = GitMaintain::checkLog(opts, merge_branch, @local_branch, "merge")
             if rep == "y" then
-                @repo.runGitInteractive("merge #{merge_branch}")
-                if $? != 0 then
+                begin
+                    @repo.runGitInteractive("merge #{merge_branch}")
+                rescue RuntimeError
                     log(:WARNING, "Merge failure. Starting bash for manual fixes. Exit shell to continue")
-			        @repo.runBash("PS1_WARNING='MERGING'")
-		        end
+		    @repo.runBash("PS1_WARNING='MERGING'")
+		end
             else
                 log(:INFO, "Skipping merge")
                 return
@@ -365,7 +372,7 @@ module GitMaintain
 
             # Make sure branch exists
             begin
-                @repo.ref_exist?(remoteRef)
+            @repo.ref_exist?(remoteRef)
             rescue NoRefError
                 log(:INFO, "Branch #{remoteRef} does not exists. Skipping...")
                 return
@@ -558,27 +565,24 @@ module GitMaintain
 		return false
 	    end
 
-	        # Hope for the best, same commit is/isn't in the current branch
-	        if @repo.runGit("merge-base #{fullhash} HEAD") == fullhash then
-		        return true
-	        end
+	    # Hope for the best, same commit is/isn't in the current branch
+	    if @repo.runGit("merge-base #{fullhash} HEAD") == fullhash then
+		return true
+	    end
 
-	        # Grab the subject, since commit sha1 is different between branches we
-	        # have to look it up based on subject.
-	        subj=@repo.getCommitSubj(commit)
-	        if $? != 0 then
-		        return false
-	        end
+	    # Grab the subject, since commit sha1 is different between branches we
+	    # have to look it up based on subject.
+	    subj=@repo.getCommitSubj(commit)
 
-	        # Try and find if there's a commit with given subject the hard way
-	        @repo.runGit("log --pretty=\"%H\" -F --grep \"#{subj.gsub("\"", '\\"')}\" "+
+	    # Try and find if there's a commit with given subject the hard way
+	    @repo.runGit("log --pretty=\"%H\" -F --grep \"#{subj.gsub("\"", '\\"')}\" "+
                          "#{@stable_base}..HEAD").split("\n").each(){|cmt|
                 cursubj=@repo.runGit("log -1 --format=\"%s\" #{cmt}")
                 if cursubj = subj then
-	                return true
-		        end
-	        }
-	        return false
+	            return true
+		end
+	    }
+	    return false
         end
 
         def is_relevant?(commit)
@@ -621,27 +625,30 @@ module GitMaintain
         end
 
         def pick_one(commit)
-            @repo.runGitInteractive("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
-	        return if  $? == 0
+            cpCmd="cherry-pick --strategy=recursive -Xpatience -x"
+            @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", false)
+	    return if $? == 0
+
             if @repo.runGit("status -uno --porcelain | wc -l") == "0" then
-			    @repo.runGit("reset --hard")
+		@repo.runGit("reset --hard")
                 raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
-		    end
-		    @repo.runGit("reset --hard")
-		    # That didn't work? Let's try that with every variation of the commit
-		    # in other stable trees.
+	    end
+	    @repo.runGit("reset --hard")
+
+	    # That didn't work? Let's try that with every variation of the commit
+	    # in other stable trees.
             @repo.find_alts(commit).each(){|alt_commit|
-			    @repo.runGitInteractive("cherry-pick --strategy=recursive -Xpatience -x #{alt_commit} &> /dev/null")
-			    if $? == 0 then
-				    return
-			    end
-			    @repo.runGit("reset --hard")
+		@repo.runGitInteractive("#{cpCmd} #{alt_commit} &> /dev/null", false)
+		if $? == 0 then
+		    return
+		end
+		@repo.runGit("reset --hard")
             }
-		    # Still no? Let's go back to the original commit and hand it off to
-		    # the user.
-		    @repo.runGitInteractive("cherry-pick --strategy=recursive -Xpatience -x #{commit} &> /dev/null")
+
+	    # Still no? Let's go back to the original commit and hand it off to
+	    # the user.
+	    @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", false)
             raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
-	        return false
         end
 
         def confirm_one(opts, commit)

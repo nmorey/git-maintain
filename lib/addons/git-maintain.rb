@@ -70,13 +70,15 @@ EOF
 mv CHANGELOG.new CHANGELOG")
 
             # Add and commit
-            @repo.runGit("add  CHANGELOG")
-            @repo.runGitInteractive("commit -F #{tag_path} --verbose --edit --signoff")
-            if $? != 0 then
+            begin
+                @repo.runGit("add  CHANGELOG")
+                @repo.runGitInteractive("commit -F #{tag_path} --verbose --edit --signoff")
+            rescue RuntimeError
                 raise("Failed to commit on branch #{local_branch}")
             end
-            @repo.runGitInteractive("tag -a -s v#{new_ver} --edit -F #{tag_path}")
-            if $? != 0 then
+            begin
+                @repo.runGitInteractive("tag -a -s v#{new_ver} --edit -F #{tag_path}")
+            rescue RuntimeError
                 raise("Failed to tag branch #{local_branch}")
             end
             `rm -f #{tag_path}`
