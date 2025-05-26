@@ -1,13 +1,13 @@
 export _GIT_MAINTAIN_CMD_AWK=$(([ -f /bin/awk ] && echo "/bin/awk") || echo "/usr/bin/awk")
 export _GIT_MAINTAIN_CMD_SORT=$(([ -f /bin/sort ] && echo "/bin/sort") || echo "/usr/bin/sort")
-export _GIT_MAINTAIN_CMD_EGREP=$(([ -f /bin/egrep ] && echo "/bin/egrep") || echo "/usr/bin/egrep")
+export _GIT_MAINTAIN_CMD_GREP=$(([ -f /bin/egrep ] && echo "/bin/egrep") || echo "/usr/bin/egrep")
 export _GIT_MAINTAIN_CMD_SED=$(([ -f /bin/sed ] && echo "/bin/sed") || echo "/usr/bin/sed")
 
 _git_maintain_genoptlist(){
 	local COMMAND=$*
 	${COMMAND}  --help 2>&1 | \
 		${_GIT_MAINTAIN_CMD_AWK} 'BEGIN { found = 0 } { if(found == 1) print $$0; if($$1 == "Options:") {found = 1}}' | \
-		${_GIT_MAINTAIN_CMD_EGREP} -e "^[[:space:]]*--" -e "^[[:space:]]*-[a-zA-Z0-9]" | \
+		${_GIT_MAINTAIN_CMD_GREP} -E -e "^[[:space:]]*--" -e "^[[:space:]]*-[a-zA-Z0-9]" | \
 		${_GIT_MAINTAIN_CMD_SED} -e 's/^[[:space:]]*//' -e 's/^-[^-], //' | \
 		${_GIT_MAINTAIN_CMD_AWK} '{ print $1}' | \
 		${_GIT_MAINTAIN_CMD_SED} -e 's/^\(.*\)\[no-\]\(.*$\)/\1\2\n\1no-\2/' | \

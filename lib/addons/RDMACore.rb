@@ -32,7 +32,7 @@ module GitMaintain
             end
         end
         def release(opts)
-            prev_ver=@repo.runGit("show HEAD:CMakeLists.txt  | egrep \"[sS][eE][tT]\\\\(PACKAGE_VERSION\"").
+            prev_ver=@repo.runGit("show HEAD:CMakeLists.txt  | grep -E \"[sS][eE][tT]\\\\(PACKAGE_VERSION\"").
                          chomp().gsub(/[sS][eE][tT]\(PACKAGE_VERSION\s*"([0-9.]*)".*$/, '\1')
             ver_nums = prev_ver.split(".")
             new_ver =  (ver_nums[0 .. -2] + [ver_nums[-1].to_i() + 1 ]).join(".")

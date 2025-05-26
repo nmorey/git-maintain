@@ -60,9 +60,9 @@ module GitMaintain
             @stable_repo = getGitConfig("maintain.stable-repo")
             @stable_repo = @@STABLE_REPO if @stable_repo == ""
 
-            @remote_valid=runGit("remote -v | egrep '^#{@valid_repo}' | grep fetch |
+            @remote_valid=runGit("remote -v | grep -E '^#{@valid_repo}' | grep fetch |
                                 awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
-            @remote_stable=runGit("remote -v | egrep '^#{@stable_repo}' | grep fetch |
+            @remote_stable=runGit("remote -v | grep -E '^#{@stable_repo}' | grep fetch |
                                       awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
 
             @auto_fetch = getGitConfig("maintain.autofetch")
@@ -83,7 +83,7 @@ module GitMaintain
             @stable_base_format = getGitConfig("maintain.stable-base-format")
 
             @stable_base_patterns=
-                runGit("config --get-regexp   stable-base | egrep '^stable-base\.' | "+
+                runGit("config --get-regexp   stable-base | grep -E '^stable-base\.' | "+
                        "sed -e 's/stable-base\.//' -e 's/---/\\//g'").split("\n").inject({}){ |m, x|
                 y=x.split(" ");
                 m[y[0]] = y[1]
@@ -200,10 +200,10 @@ module GitMaintain
 
         def getUnreleasedTags(opts)
             remote_tags=runGit("ls-remote --tags #{@stable_repo} |
-                                 egrep 'refs/tags/v[0-9.]*$'").split("\n").map(){
+                                 grep -E 'refs/tags/v[0-9.]*$'").split("\n").map(){
                 |x| x.gsub(/.*refs\/tags\//, '')
             }
-            local_tags =runGit("tag -l | egrep '^v[0-9.]*$'").split("\n")
+            local_tags =runGit("tag -l | grep -E '^v[0-9.]*$'").split("\n")
 
             new_tags = local_tags - remote_tags
             return new_tags
