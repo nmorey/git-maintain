@@ -1,6 +1,6 @@
 export _GIT_MAINTAIN_CMD_AWK=$(([ -f /bin/awk ] && echo "/bin/awk") || echo "/usr/bin/awk")
 export _GIT_MAINTAIN_CMD_SORT=$(([ -f /bin/sort ] && echo "/bin/sort") || echo "/usr/bin/sort")
-export _GIT_MAINTAIN_CMD_GREP=$(([ -f /bin/egrep ] && echo "/bin/egrep") || echo "/usr/bin/egrep")
+export _GIT_MAINTAIN_CMD_GREP=$(([ -f /bin/grep ] && echo "/bin/grep") || echo "/usr/bin/grep")
 export _GIT_MAINTAIN_CMD_SED=$(([ -f /bin/sed ] && echo "/bin/sed") || echo "/usr/bin/sed")
 
 _git_maintain_genoptlist(){
