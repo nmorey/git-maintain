@@ -49,8 +49,9 @@ module GitMaintain
 
             git_prev_ver = "v" + prev_ver
             # Older tags might do have the terminal minor version (.0) for major releases
-            @repo.runGit("rev-parse --verify --quiet #{git_prev_ver}")
-            if $? != 0 then
+            begin
+                @repo.ref_exist?(git_prev_ver)
+            rescue NoRefError
                 # Try without the minor version number
                 git_prev_ver = "v" + ver_nums[0 .. -2].join(".")
             end

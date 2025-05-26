@@ -224,10 +224,10 @@ module GitMaintain
                 @verbose_name = version
             end
 
-            @head          = @repo.runGit("rev-parse --verify --quiet #{@local_branch}")
+            @head          = @repo.ref_exist?(@local_branch)
             @valid_ref     = "#{@repo.valid_repo}/#{@local_branch}"
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
-            @stable_head   = @repo.runGit("rev-parse --verify --quiet #{@remote_ref}")
+            @stable_head   = @repo.ref_exist?(@remote_ref)
             case @branch_type
             when :std
                 @stable_base   = @repo.findStableBase(@local_branch)
@@ -333,8 +333,9 @@ module GitMaintain
             merge_branch = @repo.versionToLocalBranch(@version, opts[:do_merge])
 
             # Make sure branch exists
-            hash_to_merge = @repo.runGit("rev-parse --verify --quiet #{merge_branch}")
-            if $? != 0 then
+            begin
+                hash_to_merge = @repo.ref_exist?(merge_branch)
+            rescue NoRefError
                 log(:INFO, "Branch #{merge_branch} does not exists. Skipping...")
                 return
             end
@@ -363,8 +364,9 @@ module GitMaintain
             remoteRef = opts[:stable] == true ? @remote_ref : @valid_ref
 
             # Make sure branch exists
-            @repo.runGit("rev-parse --verify --quiet #{remoteRef}")
-            if $? != 0 then
+            begin
+                @repo.ref_exist?(remoteRef)
+            rescue NoRefError
                 log(:INFO, "Branch #{remoteRef} does not exists. Skipping...")
                 return
             end
@@ -485,8 +487,9 @@ module GitMaintain
 
         def delete(opts)
             if opts[:delete_remote] == true then
-                @repo.runGit("rev-parse --verify --quiet #{@repo.valid_repo}/#{@local_branch}")
-                if $? != 0 then
+                begin
+                    @repo.ref_exist?("#{@repo.valid_repo}/#{@local_branch}")
+                rescue NoRefError
                     log(:DEBUG, "Skipping non existing remote branch #{@local_branch}.")
                     return
                 end
@@ -545,13 +548,15 @@ module GitMaintain
         end
 
         def is_in_tree?(commit, src_commit=commit)
-	        fullhash=@repo.runGit("rev-parse --verify --quiet #{commit}")
+            fullhash=nil
+            begin
+	        fullhash=@repo.ref_exist?(commit)
+            rescue NoRefError
 	        # This might happen if someone pointed to a commit that doesn't exist in our
 	        # tree.
-	        if $? != 0 then
                 log(:WARNING, "Commit #{src_commit} points to a SHA #{commit} not in tree")
-		        return false
-	        end
+		return false
+	    end
 
 	        # Hope for the best, same commit is/isn't in the current branch
 	        if @repo.runGit("merge-base #{fullhash} HEAD") == fullhash then
@@ -750,8 +755,8 @@ module GitMaintain
        end
 
         def same_sha?(ref1, ref2)
-            c1=@repo.runGit("rev-parse --verify --quiet #{ref1}")
-            c2=@repo.runGit("rev-parse --verify --quiet #{ref2}")
+            c1=@repo.ref_exist?(ref1)
+            c2=@repo.ref_exist?(ref2)
             return c1 == c2
 
         end

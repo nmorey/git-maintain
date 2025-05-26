@@ -373,8 +373,11 @@ module GitMaintain
                      localBr = branch.local_branch
                      stableBr = @@STABLE_REPO + "/" + branch.remote_branch
                      stableBase = branch.stable_base
-                     runGit("rev-parse --verify --quiet #{stableBr}")
-                     stableBr = "<MISSING>" if $? != 0 
+                     begin
+                         ref_exist?(stableBr)
+                     rescue NoRefError
+                         stableBr = "<MISSING>"
+                     end
                      log(:INFO, "\t#{localBr} -> #{stableBr} (#{stableBase})")
                      brStList.delete(br)
                  }
