@@ -2,6 +2,11 @@ require 'octokit'
 require 'io/console'
 
 module GitMaintain
+    class NoRefError < RuntimeError
+        def initialize(ref)
+            super("Reference '#{ref}' was not found")
+        end
+    end
     class Repo
         @@VALID_REPO = "github"
         @@STABLE_REPO = "stable"
@@ -126,6 +131,11 @@ module GitMaintain
             log(:DEBUG, "Called from #{caller[1]}")
             log(:DEBUG, "Running interactive git command '#{cmd}'")
             return system("git --work-tree=#{@path} #{cmd}")
+        end
+        def ref_exist?(ref)
+            ret = runGit("rev-parse --verify --quiet '#{ref}'")
+            raise(NoRefError.new(rev)) if $? != 0
+            return ret
         end
 
         def runGitImap(cmd)
