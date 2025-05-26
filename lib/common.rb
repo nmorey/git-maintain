@@ -241,7 +241,7 @@ $LOAD_PATH.pop()
 
 if ENV["GIT_MAINTAIN_ADDON_DIR"].to_s() != "" then
     ADDON_DIR=ENV["GIT_MAINTAIN_ADDON_DIR"].to_s()
-    if Dir.exists?(ADDON_DIR) then
+    if Dir.exist?(ADDON_DIR) then
         $LOAD_PATH.push(ADDON_DIR)
         Dir.entries(ADDON_DIR).each(){|entry|
             next if (!File.file?(ADDON_DIR + "/" + entry) || entry !~ /\.rb$/ );
