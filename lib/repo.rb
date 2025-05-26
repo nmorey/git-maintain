@@ -286,22 +286,22 @@ module GitMaintain
 
         def createRelease(opts, tag, github_rel=true)
             log(:INFO, "Creating a release for #{tag}")
-		    runGit("push #{@stable_repo} refs/tags/#{tag}")
+	    runGit("push #{@stable_repo} refs/tags/#{tag}")
 
             if github_rel == true then
- 		        msg = runGit("tag -l -n1000 '#{tag}'") + "\n"
+ 		msg = runGit("tag -l -n1000 '#{tag}'") + "\n"
 
-		        # Ye ghods is is a horrific format to parse
-		        name, body = msg.split("\n", 2)
-		        name = name.gsub(/^#{tag}/, '').strip
-		        body = body.split("\n").map { |l| l.sub(/^    /, '') }.join("\n")
-		        api.create_release(@remote_stable, tag, :name => name, :body => body)
+		# Ye ghods is is a horrific format to parse
+		name, body = msg.split("\n", 2)
+		name = name.gsub(/^#{tag}/, '').strip
+		body = body.split("\n").map { |l| l.sub(/^    /, '') }.join("\n")
+		api.create_release(@remote_stable, tag, :name => name, :body => body)
             end
-       end
+        end
 
         def versionToLocalBranch(version, suff)
             return @branch_format_raw.gsub(/\\\//, '/').
-                gsub(/\(.*\)/, version) + "/#{suff}"
+                       gsub(/\(.*\)/, version) + "/#{suff}"
         end
 
         def versionToStableBranch(version)
@@ -355,57 +355,57 @@ module GitMaintain
             submitReleases(opts, new_tags)
         end
         def summary(opts)
-             log(:INFO, "Configuration summary:")
-             if self.class != GitMaintain::Repo then
-                 log(:INFO, "Using custom repo class: #{self.class.to_s()}")
-             end
-             log(:INFO, "Stable remote: #{@stable_repo}")
-             log(:INFO, "Validation remote: #{@valid_repo}")
-             log(:INFO, "")
-             log(:INFO, "Branch config:")
-             log(:INFO, "Local branch format: /#{@branch_format_raw}/")
-             log(:INFO, "Remote stable branch format: #{@stable_branch_format}")
-             log(:INFO, "Remote stable base format: #{@stable_base_format}")
+            log(:INFO, "Configuration summary:")
+            if self.class != GitMaintain::Repo then
+                log(:INFO, "Using custom repo class: #{self.class.to_s()}")
+            end
+            log(:INFO, "Stable remote: #{@stable_repo}")
+            log(:INFO, "Validation remote: #{@valid_repo}")
+            log(:INFO, "")
+            log(:INFO, "Branch config:")
+            log(:INFO, "Local branch format: /#{@branch_format_raw}/")
+            log(:INFO, "Remote stable branch format: #{@stable_branch_format}")
+            log(:INFO, "Remote stable base format: #{@stable_base_format}")
 
-             if @stable_base_patterns.length > 0 then
-                 log(:INFO, "")
-                 log(:INFO, "Stable base rules:")
-                 @stable_base_patterns.each(){|name, base|
-                     log(:INFO, "\t#{name} -> #{base}")
-                 }
-             end
-             brList = getBranchList(opts[:br_suff])
-             brStList = getStableBranchList()
+            if @stable_base_patterns.length > 0 then
+                log(:INFO, "")
+                log(:INFO, "Stable base rules:")
+                @stable_base_patterns.each(){|name, base|
+                    log(:INFO, "\t#{name} -> #{base}")
+                }
+            end
+            brList = getBranchList(opts[:br_suff])
+            brStList = getStableBranchList()
 
-             if brList.length > 0 then
-                 log(:INFO, "")
-                 log(:INFO, "Local branches:")
-                 brList.each(){|br|
-                     branch = Branch.load(self, br, nil, opts[:br_suff])
-                     localBr = branch.local_branch
-                     stableBr = @@STABLE_REPO + "/" + branch.remote_branch
-                     stableBase = branch.stable_base
-                     begin
-                         ref_exist?(stableBr)
-                     rescue NoRefError
-                         stableBr = "<MISSING>"
-                     end
-                     log(:INFO, "\t#{localBr} -> #{stableBr} (#{stableBase})")
-                     brStList.delete(br)
-                 }
-             end
+            if brList.length > 0 then
+                log(:INFO, "")
+                log(:INFO, "Local branches:")
+                brList.each(){|br|
+                    branch = Branch.load(self, br, nil, opts[:br_suff])
+                    localBr = branch.local_branch
+                    stableBr = @@STABLE_REPO + "/" + branch.remote_branch
+                    stableBase = branch.stable_base
+                    begin
+                        ref_exist?(stableBr)
+                    rescue NoRefError
+                        stableBr = "<MISSING>"
+                    end
+                    log(:INFO, "\t#{localBr} -> #{stableBr} (#{stableBase})")
+                    brStList.delete(br)
+                }
+            end
 
-             if brStList.length > 0 then
-                 log(:INFO, "")
-                 log(:INFO, "Upstream branches:")
-                 brStList.each(){|br|
-                     branch = Branch.load(self, br, nil, opts[:branch_suff])
-                     stableBr = @@STABLE_REPO + "/" + branch.remote_branch
-                     stableBase = branch.stable_base
-                     log(:INFO, "\t<MISSING> -> #{stableBr} (#{stableBase})")
-                 }
-             end
-       end
+            if brStList.length > 0 then
+                log(:INFO, "")
+                log(:INFO, "Upstream branches:")
+                brStList.each(){|br|
+                    branch = Branch.load(self, br, nil, opts[:branch_suff])
+                    stableBr = @@STABLE_REPO + "/" + branch.remote_branch
+                    stableBase = branch.stable_base
+                    log(:INFO, "\t<MISSING> -> #{stableBr} (#{stableBase})")
+                }
+            end
+        end
         def find_alts(commit)
             alts=[]
 
@@ -430,46 +430,46 @@ module GitMaintain
         #
         # Github API stuff
         #
-	    def api
-		    @api ||= Octokit::Client.new(:access_token => token, :auto_paginate => true)
-	    end
+	def api
+	    @api ||= Octokit::Client.new(:access_token => token, :auto_paginate => true)
+	end
 
-	    def token
-		    @token ||= begin
-			               # We cannot use the 'defaults' functionality of git_config here,
-			               # because get_new_token would be evaluated before git_config ran
-			               tok = getGitConfig("maintain.api-token")
+	def token
+	    @token ||= begin
+			   # We cannot use the 'defaults' functionality of git_config here,
+			   # because get_new_token would be evaluated before git_config ran
+			   tok = getGitConfig("maintain.api-token")
                            tok.to_s() == "" ? get_new_token : tok
-		               end
-	    end
- 	    def get_new_token
-		    puts "Requesting a new OAuth token from Github..."
-		    print "Github username: "
-		    user = $stdin.gets.chomp
-		    print "Github password: "
-		    pass = $stdin.noecho(&:gets).chomp
-		    puts
+		       end
+	end
+ 	def get_new_token
+	    puts "Requesting a new OAuth token from Github..."
+	    print "Github username: "
+	    user = $stdin.gets.chomp
+	    print "Github password: "
+	    pass = $stdin.noecho(&:gets).chomp
+	    puts
 
-		    api = Octokit::Client.new(:login => user, :password => pass)
+	    api = Octokit::Client.new(:login => user, :password => pass)
 
-		    begin
-			    res = api.create_authorization(:scopes => [:repo], :note => "git-maintain")
-		    rescue Octokit::Unauthorized
-			    puts "Username or password incorrect.  Please try again."
-			    return get_new_token
+	    begin
+		res = api.create_authorization(:scopes => [:repo], :note => "git-maintain")
+	    rescue Octokit::Unauthorized
+		puts "Username or password incorrect.  Please try again."
+		return get_new_token
             rescue Octokit::OneTimePasswordRequired
-		        print "Github OTP: "
-		        otp = $stdin.noecho(&:gets).chomp
-			    res = api.create_authorization(:scopes => [:repo], :note => "git-maintain",
+		print "Github OTP: "
+		otp = $stdin.noecho(&:gets).chomp
+		res = api.create_authorization(:scopes => [:repo], :note => "git-maintain",
                                                :headers => {"X-GitHub-OTP" => otp})
-		    end
+	    end
 
-		    token = res[:token]
-		    runGit("config --global maintain.api-token '#{token}'")
+	    token = res[:token]
+	    runGit("config --global maintain.api-token '#{token}'")
 
             # Now reopen with the token so OTP does not bother us
             @api=nil
             token
-	    end
-   end
+	end
+    end
 end

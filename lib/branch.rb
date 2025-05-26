@@ -83,8 +83,8 @@ module GitMaintain
                 optsParser.on("--remote", "Delete the remote staging branch instead of the local ones.") {
                     |val| opts[:delete_remote] = true}
             when :list
-                 optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
-                     opts[:stable] = true }
+                optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
+                    opts[:stable] = true }
             when :merge
                 optsParser.banner += "-m <suffix>"
                 optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
@@ -93,17 +93,17 @@ module GitMaintain
                 optsParser.on("-w", "--watch <PERIOD>", Integer,
                               "Watch and refresh CI status every <PERIOD>.") {
                     |val| opts[:watch] = val}
-                 optsParser.on("--stable", "Check CI status on stable repo.") {
-                     opts[:stable] = true }
+                optsParser.on("--stable", "Check CI status on stable repo.") {
+                    opts[:stable] = true }
             when :pull
-                 optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
-                     opts[:stable] = true }
+                optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
+                    opts[:stable] = true }
             when :push
                 optsParser.banner += "[-f]"
                 optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
                     opts[:push_force] = true}
                 optsParser.on("--stable", "Push to stable repo.") {
-                     opts[:stable] = true }
+                    opts[:stable] = true }
                 optsParser.banner += "[-T]"
                 optsParser.on("-T", "--no-ci", "Ignore CI build status and push anyway.") {
                     opts[:no_ci] = true}
@@ -115,16 +115,16 @@ module GitMaintain
             when :steal
                 optsParser.banner += "[-a][-b <HEAD>]"
                 optsParser.on("-a", "--all", "Check all commits from master. "+
-                                               "By default only new commits (since last successful run) are considered.") {
+                                             "By default only new commits (since last successful run) are considered.") {
                     |val| opts[:steal_base] = :all}
                 optsParser.on("-b", "--base <HEAD>", "Check all commits from this commit. "+
-                                               "By default only new commits (since last successful run) are considered.") {
+                                                     "By default only new commits (since last successful run) are considered.") {
                     |val| opts[:steal_base] = val}
             end
         end
 
         def self.check_opts(opts)
-               if opts[:action] == :release then
+            if opts[:action] == :release then
                 if opts[:br_suff] != "master" then
                     raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
                 end
@@ -276,7 +276,7 @@ module GitMaintain
                 new_head=@repo.runGit("rev-parse HEAD")
                 # Do not make commit pretty if it was not applied
                 if new_head != prev_head
-		            make_pretty(commit)
+		    make_pretty(commit)
                 end
             }
         end
@@ -288,26 +288,26 @@ module GitMaintain
             # If we are not force checking everything,
             # try to start from the last tag we steal upto
             case opts[:steal_base]
-                when nil
-                    begin
-                        sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
-                        base_ref=sha
-                        log(:VERBOSE, "Starting from last successfull run:")
-                        log(:VERBOSE, @repo.getCommitHeadline(base_ref))
-                    rescue RuntimeError
-                        # No matching tag found. Not an issue
-                    end
-                when :all
-                    base_ref=@stable_base
-                else
-                    begin
-                        sha = @repo.runGit("rev-parse #{opts[:steal_base]} 2>&1")
-                        base_ref=sha
-                        log(:VERBOSE, "Starting from base:")
-                        log(:VERBOSE, @repo.getCommitHeadline(base_ref))
-                    rescue RuntimeError
-                        crit("Could not find specified base '#{opts[:steal_base]}'")
-                    end
+            when nil
+                begin
+                    sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
+                    base_ref=sha
+                    log(:VERBOSE, "Starting from last successfull run:")
+                    log(:VERBOSE, @repo.getCommitHeadline(base_ref))
+                rescue RuntimeError
+                    # No matching tag found. Not an issue
+                end
+            when :all
+                base_ref=@stable_base
+            else
+                begin
+                    sha = @repo.runGit("rev-parse #{opts[:steal_base]} 2>&1")
+                    base_ref=sha
+                    log(:VERBOSE, "Starting from base:")
+                    log(:VERBOSE, @repo.getCommitHeadline(base_ref))
+                rescue RuntimeError
+                    crit("Could not find specified base '#{opts[:steal_base]}'")
+                end
             end
 
             master_sha=@repo.runGit("rev-parse origin/master")
@@ -372,7 +372,7 @@ module GitMaintain
 
             # Make sure branch exists
             begin
-            @repo.ref_exist?(remoteRef)
+                @repo.ref_exist?(remoteRef)
             rescue NoRefError
                 log(:INFO, "Branch #{remoteRef} does not exists. Skipping...")
                 return
@@ -532,7 +532,7 @@ module GitMaintain
 
         private
         def add_blacklist(commit)
-  	        @repo.runGit("notes append -m \"#{@local_branch}\" #{commit}")
+  	    @repo.runGit("notes append -m \"#{@local_branch}\" #{commit}")
         end
 
         def is_blacklisted?(commit)
@@ -548,9 +548,9 @@ module GitMaintain
 
             msg_path=`mktemp`.chomp()
             msg_file = File.open(msg_path, "w+")
-	        msg_file.puts @repo.runGit("log -1 --format=\"%s%n%n[ Upstream commit #{msg_commit} ]%n%n%b\" #{orig_commit}")
+	    msg_file.puts @repo.runGit("log -1 --format=\"%s%n%n[ Upstream commit #{msg_commit} ]%n%n%b\" #{orig_commit}")
             msg_file.close()
-	        @repo.runGit("commit -s --amend -F #{msg_path}")
+	    @repo.runGit("commit -s --amend -F #{msg_path}")
             `rm -f #{msg_path}`
         end
 
@@ -586,42 +586,42 @@ module GitMaintain
         end
 
         def is_relevant?(commit)
-	        # Let's grab the commit that this commit fixes (if exists (based on the "Fixes:" tag)).
-	        fixescmt=@repo.runGit("log -1 #{commit} | grep -i \"fixes:\" | head -n 1 | "+
+	    # Let's grab the commit that this commit fixes (if exists (based on the "Fixes:" tag)).
+	    fixescmt=@repo.runGit("log -1 #{commit} | grep -i \"fixes:\" | head -n 1 | "+
                                   "sed -e 's/^[ \\t]*//' | cut -f 2 -d ':' | "+
                                   "sed -e 's/^[ \\t]*//' -e 's/\\([0-9a-f]\\+\\)(/\\1 (/' | cut -f 1 -d ' '")
 
-	        # If this commit fixes anything, but the broken commit isn't in our branch we don't
-	        # need this commit either.
-	        if fixescmt != "" then
-		          if is_in_tree?(fixescmt, commit) then
-                      return true
-                  else
-                      return false
-                  end
+	    # If this commit fixes anything, but the broken commit isn't in our branch we don't
+	    # need this commit either.
+	    if fixescmt != "" then
+		if is_in_tree?(fixescmt, commit) then
+                    return true
+                else
+                    return false
+                end
             end
 
-	        if @repo.runGit("show #{commit} | grep -i 'stable@' | wc -l") == "0" then
-		        return false
-	        end
+	    if @repo.runGit("show #{commit} | grep -i 'stable@' | wc -l") == "0" then
+		return false
+	    end
 
-	        # Let's see if there's a version tag in this commit
-	        full=@repo.runGit("show #{commit} | grep -i 'stable@'").gsub(/.* #?/, "")
+	    # Let's see if there's a version tag in this commit
+	    full=@repo.runGit("show #{commit} | grep -i 'stable@'").gsub(/.* #?/, "")
 
-	        # Sanity check our extraction
+	    # Sanity check our extraction
             if full =~ /stable/ then
                 return false
             end
 
             full = @repo.runGit("rev-parse #{full}^{commit}")
 
-	        # Make sure our branch contains this version
-	        if @repo.runGit("merge-base #{@head} #{full}") == full then
-		        return true
-	        end
+	    # Make sure our branch contains this version
+	    if @repo.runGit("merge-base #{@head} #{full}") == full then
+		return true
+	    end
 
-	        # Tag is not in history, ignore
-	        return false
+	    # Tag is not in history, ignore
+	    return false
         end
 
         def pick_one(commit)
@@ -652,11 +652,11 @@ module GitMaintain
         end
 
         def confirm_one(opts, commit)
- 		    rep=""
-		    do_cp=false
-		    puts @repo.getCommitHeadline(commit)
-		    while rep != "y" do
-			    puts "Do you want to steal this commit ? (y/n/b/?)"
+ 	    rep=""
+	    do_cp=false
+	    puts @repo.getCommitHeadline(commit)
+	    while rep != "y" do
+		puts "Do you want to steal this commit ? (y/n/b/?)"
                 case opts[:yn_default]
                 when :no
                     log(:INFO, "Auto-replying no due to --no option")
@@ -669,38 +669,38 @@ module GitMaintain
                     rep = STDIN.gets.chomp()
                 end
 
-			    case rep
-				when "n"
-			        log(:INFO, "Skip this commit")
-					break
-				when "b"
-					log(:INFO, "Blacklisting this commit for the current branch")
-					add_blacklist(commit)
-					break
-				when "y"
-					rep="y"
-					do_cp=true
-					break
-				when "?"
-					puts @repo.runGit("show #{commit}")
+		case rep
+		when "n"
+		    log(:INFO, "Skip this commit")
+		    break
+		when "b"
+		    log(:INFO, "Blacklisting this commit for the current branch")
+		    add_blacklist(commit)
+		    break
+		when "y"
+		    rep="y"
+		    do_cp=true
+		    break
+		when "?"
+		    puts @repo.runGit("show #{commit}")
                 else
-					log(:ERROR, "Invalid answer $rep")
-		            puts @repo.runGit("show --format=oneline --no-patch --no-decorate #{commit}")
+		    log(:ERROR, "Invalid answer $rep")
+		    puts @repo.runGit("show --format=oneline --no-patch --no-decorate #{commit}")
                 end
-		    end
+	    end
             return do_cp
         end
 
         def steal_one(opts, commit, mainline=false)
-		    msg=''
+	    msg=''
             orig_cmt=commit
 
             if mainline == false then
-		        subj=@repo.getCommitSubj(commit)
+		subj=@repo.getCommitSubj(commit)
                 subj.gsub!(/"/, '\"')
-		        # Let's grab the mainline commit id, this is useful if the version tag
-		        # doesn't exist in the commit we're looking at but exists upstream.
-		        orig_cmt=@repo.runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
+		# Let's grab the mainline commit id, this is useful if the version tag
+		# doesn't exist in the commit we're looking at but exists upstream.
+		orig_cmt=@repo.runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
                                       "#{@stable_base}..origin/master | tail -n1")
 
                 if orig_cmt == "" then
@@ -708,24 +708,24 @@ module GitMaintain
                 end
             end
             # If the commit doesn't apply for us, skip it
-		    if is_relevant?(orig_cmt) != true
+	    if is_relevant?(orig_cmt) != true
                 return true
-		    end
+	    end
 
             log(:VERBOSE, "Found relevant commit #{@repo.getCommitHeadline(commit)}")
-		    if is_in_tree?(orig_cmt) == true
-		        # Commit is already in the stable branch, skip
+	    if is_in_tree?(orig_cmt) == true
+		# Commit is already in the stable branch, skip
                 log(:VERBOSE, "Commit is already in tree")
                 return true
-		    end
+	    end
 
-		    # Check if it's not blacklisted by a git-notes
-		    if is_blacklisted?(orig_cmt) == true then
-		        # Commit is blacklisted
-			    log(:INFO, "Skipping 'blacklisted' commit " +
-                     @repo.getCommitHeadline(orig_cmt))
+	    # Check if it's not blacklisted by a git-notes
+	    if is_blacklisted?(orig_cmt) == true then
+		# Commit is blacklisted
+		log(:INFO, "Skipping 'blacklisted' commit " +
+                           @repo.getCommitHeadline(orig_cmt))
                 return true
-		    end
+	    end
 
             do_cp = confirm_one(opts, orig_cmt)
             return false if do_cp != true
@@ -733,33 +733,33 @@ module GitMaintain
             prev_head=@repo.runGit("rev-parse HEAD")
 
             begin
-		        pick_one(commit)
+		pick_one(commit)
             rescue CherryPickErrorException => e
-			    log(:WARNING, "Cherry pick failed. Fix, commit (or reset) and exit.")
-			    @repo.runBash("PS1_WARNING='CP FIX'")
+		log(:WARNING, "Cherry pick failed. Fix, commit (or reset) and exit.")
+		@repo.runBash("PS1_WARNING='CP FIX'")
             end
             new_head=@repo.runGit("rev-parse HEAD")
 
-		    # If we didn't find the commit upstream then this must be a custom commit
-		    # in the given tree - make sure the user checks this commit.
-		    if orig_cmt == "" then
-			    msg="Custom"
-			    orig_cmt=@repo.runGit("rev-parse HEAD")
-			    log(:WARNING, "Custom commit, please double-check!")
-			    @repo.runBash("PS1_WARNING='CHECK'")
-		    end
+	    # If we didn't find the commit upstream then this must be a custom commit
+	    # in the given tree - make sure the user checks this commit.
+	    if orig_cmt == "" then
+		msg="Custom"
+		orig_cmt=@repo.runGit("rev-parse HEAD")
+		log(:WARNING, "Custom commit, please double-check!")
+		@repo.runBash("PS1_WARNING='CHECK'")
+	    end
             if new_head != prev_head
-		        make_pretty(orig_cmt, msg)
+		make_pretty(orig_cmt, msg)
             end
         end
 
         def steal_all(opts, range, mainline = false)
             res = true
- 	        @repo.runGit("log --no-merges --format=\"%H\" #{range} | tac").split("\n").each(){|commit|
+ 	    @repo.runGit("log --no-merges --format=\"%H\" #{range} | tac").split("\n").each(){|commit|
                 res &= steal_one(opts, commit, mainline)
             }
             return res
-       end
+        end
 
         def same_sha?(ref1, ref2)
             c1=@repo.ref_exist?(ref1)
