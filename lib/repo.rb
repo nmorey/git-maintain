@@ -359,7 +359,7 @@ module GitMaintain
                  log(:INFO, "")
                  log(:INFO, "Local branches:")
                  brList.each(){|br|
-                     branch = Branch.load(self, br, nil, opts[:branch_suff])
+                     branch = Branch.load(self, br, nil, opts[:br_suff])
                      localBr = branch.local_branch
                      stableBr = @@STABLE_REPO + "/" + branch.remote_branch
                      stableBase = branch.stable_base
