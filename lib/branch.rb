@@ -536,9 +536,12 @@ module GitMaintain
         end
 
         def is_blacklisted?(commit)
-            @repo.runGit("notes show #{commit} 2> /dev/null").split("\n").each(){|br|
-                return true if br == @local_branch
-            }
+            begin
+                @repo.runGit("notes show #{commit} 2> /dev/null").split("\n").each(){|br|
+                    return true if br == @local_branch
+                }
+            rescue
+            end
             return false
         end
 
