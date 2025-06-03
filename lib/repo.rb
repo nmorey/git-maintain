@@ -145,7 +145,7 @@ module GitMaintain
             begin
                 return runGit("rev-parse --verify --quiet '#{ref}'")
             rescue RuntimeError
-                raise(NoRefError.new(rev))
+                raise(NoRefError.new(ref))
             end
         end
 
