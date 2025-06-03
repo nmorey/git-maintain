@@ -765,9 +765,13 @@ module GitMaintain
         end
 
         def same_sha?(ref1, ref2)
-            c1=@repo.ref_exist?(ref1)
-            c2=@repo.ref_exist?(ref2)
-            return c1 == c2
+            begin
+                c1=@repo.ref_exist?(ref1)
+                c2=@repo.ref_exist?(ref2)
+                return c1 == c2
+            rescue
+                return false
+            end
 
         end
     end
