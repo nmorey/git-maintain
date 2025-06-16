@@ -227,7 +227,12 @@ module GitMaintain
             @head          = @repo.ref_exist?(@local_branch)
             @valid_ref     = "#{@repo.valid_repo}/#{@local_branch}"
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
-            @stable_head   = @repo.ref_exist?(@remote_ref)
+            @stable_head   = 
+                begin
+                    @repo.ref_exist?(@remote_ref)
+                rescue
+                    nil
+                end
             case @branch_type
             when :std
                 @stable_base   = @repo.findStableBase(@local_branch)
