@@ -203,6 +203,8 @@ module GitMaintain
                 sleep(opts[:watch])
                 ci.emptyCache()
             end
+            GitMaintain::log(:INFO, "Done working on selected branches")
+
         end
 
         def initialize(repo, version, ci, branch_suff)
