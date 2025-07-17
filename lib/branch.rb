@@ -636,7 +636,7 @@ module GitMaintain
 
         def pick_one(commit)
             cpCmd="cherry-pick --strategy=recursive -Xpatience -x"
-            @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", false)
+            @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", :check_err => false)
 	    return if $? == 0
 
             if @repo.runGit("status -uno --porcelain | wc -l") == "0" then
@@ -648,7 +648,7 @@ module GitMaintain
 	    # That didn't work? Let's try that with every variation of the commit
 	    # in other stable trees.
             @repo.find_alts(commit).each(){|alt_commit|
-		@repo.runGitInteractive("#{cpCmd} #{alt_commit} &> /dev/null", false)
+		@repo.runGitInteractive("#{cpCmd} #{alt_commit} &> /dev/null", :check_err => false)
 		if $? == 0 then
 		    return
 		end
@@ -657,7 +657,7 @@ module GitMaintain
 
 	    # Still no? Let's go back to the original commit and hand it off to
 	    # the user.
-	    @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", false)
+	    @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", :check_err => false)
             raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
         end
 

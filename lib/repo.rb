@@ -115,29 +115,32 @@ module GitMaintain
             GitMaintain::log(lvl, str)
         end
 
-        def run(cmd, check_err = true)
+        def _run_check_ret(ret, opts)
+            raise(RuntimeError.new(ret)) if $?.exitstatus != 0 && opts.fetch(:check_err, true) == true
+        end
+        def run(cmd, opts = {})
             ret = `cd #{@path} && #{cmd}`
-            raise(RuntimeError.new(ret)) if $?.exitstatus != 0 && check_err == true
+            _run_check_ret(ret, opts)
             return ret
         end
-        def runSystem(cmd, check_err = true)
+        def runSystem(cmd, opts = {})
             ret = system("cd #{@path} && #{cmd}")
-            raise(RuntimeError.new()) if $?.exitstatus != 0 && check_err == true
+            _run_check_ret(nil, opts)
             return ret
 
         end
-        def runGit(cmd, check_err = true)
+        def runGit(cmd, opts = {})
             log(:DEBUG, "Called from #{caller[1]}")
             log(:DEBUG, "Running git command '#{cmd}'")
             ret = `git --work-tree=#{@path} #{cmd}`.chomp()
-            raise(RuntimeError.new(ret)) if $?.exitstatus != 0 && check_err == true
+            _run_check_ret(ret, opts)
             return ret
         end
-        def runGitInteractive(cmd, check_err = true)
+        def runGitInteractive(cmd, opts = {})
             log(:DEBUG, "Called from #{caller[1]}")
             log(:DEBUG, "Running interactive git command '#{cmd}'")
             ret = system("git --work-tree=#{@path} #{cmd}")
-            raise(RuntimeError.new()) if $?.exitstatus != 0 && check_err == true
+            _run_check_ret(nil, opts)
             return ret
 
         end
@@ -159,7 +162,7 @@ module GitMaintain
                   fi; git --work-tree=#{@path} imap-send #{cmd}`
         end
         def getGitConfig(entry)
-            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null", false).chomp()
+            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null", :check_err => false).chomp()
         end
 
         def runBash(env="")
