@@ -24,7 +24,7 @@ module GitMaintain
         }
 
         def self.load(path=".")
-            dir = Dir.pwd()
+            dir = File.realdirpath(path)
             repo_name = File.basename(dir)
             return GitMaintain::loadClass(Repo, repo_name, dir)
         end
