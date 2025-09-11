@@ -1,7 +1,15 @@
 module GitMaintain
     class HPCTestingBranch < Branch
         REPO_NAME = "hpc-testing"
+        def self.set_opts(action, optsParser, opts)
+            opts[:auto_news] = false
 
+            case action
+            when :release
+                 optsParser.on("--auto-news", "Auto-generate NEWS entries.") {
+                     opts[:auto_news] = true }
+           end
+        end
         def release(opts)
             prev_ver=@repo.runGit("show HEAD:rpm/hpc-testing.spec  | grep Version: | awk '{ print $NF}'").
                          chomp()
@@ -34,9 +42,12 @@ module GitMaintain
             # Update version number in relevant files
             @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]*/\\1#{new_ver}/g' rpm/hpc-testing.spec")
 
+            news_entries = ""
+            if opts[:auto_news] == true then
+                news_entries = "\n" + @repo.runGit("log HEAD ^#{git_prev_ver} --no-merges  --format='  * %s'")
+            end
             @repo.run("cat <<EOF > NEWS.new
-- hpc-testing #{new_ver}
-#{@repo.runGit("log HEAD ^#{git_prev_ver} --no-merges  --format='  * %s'")}
+- hpc-testing #{new_ver}#{news_entries}
 $(cat NEWS)
 EOF
 mv NEWS.new NEWS")
