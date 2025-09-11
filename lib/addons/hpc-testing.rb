@@ -41,14 +41,17 @@ $(cat NEWS)
 EOF
 mv NEWS.new NEWS")
 
+            edit_flag = ""
+            edit_flag = "--edit" if opts[:no_edit] == false
+
             # Add and commit
             begin
                 @repo.runGit("add  rpm/hpc-testing.spec NEWS")
-                @repo.runGitInteractive("commit -F #{tag_path} --verbose --edit --signoff")
+                @repo.runGitInteractive("commit -F #{tag_path} --verbose #{edit_flag} --signoff")
             rescue RuntimeError
                 raise("Failed to commit on branch #{local_branch}")
             end
-            @repo.runGitInteractive("tag -a -s v#{new_ver} --edit -F #{tag_path}")
+            @repo.runGitInteractive("tag -a -s v#{new_ver} #{edit_flag} -F #{tag_path}")
             if $? != 0 then
                 raise("Failed to tag branch #{local_branch}")
             end
