@@ -1,3 +1,4 @@
+* Cleanup code for Addons releases
 * Replace all egrep calls with grep -E
 * Replace $? handling with Exceptions
 * Various minor fixes
