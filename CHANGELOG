@@ -1,3 +1,8 @@
+* Replace all egrep calls with grep -E
+* Replace $? handling with Exceptions
+* Various minor fixes
+* Drop obsolete Travis CI code
+
 ------------------
 0.11.0  (2025-04-15)
 ------------------
