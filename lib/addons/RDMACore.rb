@@ -81,11 +81,7 @@ module GitMaintain
 
             if opts[:rel_type] == :major
                 # For major, tag the current version first
-                begin
-                    @repo.runGitInteractive("tag -a -s v#{rel_ver} #{edit_flag} -F #{tag_path}")
-                rescue RuntimeError
-                    raise("Failed to tag branch #{local_branch}")
-                end
+                release_do_tag(opts, "v" + rel_ver, tag_path)
             end
 
             # Update version number in relevant files
@@ -109,20 +105,14 @@ mv debian/changelog.new debian/changelog")
             end
 
             # Add and commit
-            begin
-                @repo.runGit("add  */*.spec CMakeLists.txt debian/changelog")
-                @repo.runGitInteractive("commit -m '#{commit_msg} #{new_ver}' --verbose #{edit_flag} --signoff")
-            rescue RuntimeError
-                raise("Failed to commit on branch #{local_branch}")
-            end
+            release_do_add_commit(opts, [ "*/*.spec", "CMakeLists.txt", "debian/changelog" ],
+                                  new_ver, nil, "#{commit_msg} #{new_ver}")
 
             if opts[:rel_type] == :stable
-                @repo.runGitInteractive("tag -a -s v#{rel_ver} #{edit_flag} -F #{tag_path}")
-                if $? != 0 then
-                    raise("Failed to tag branch #{local_branch}")
-                end
+                release_do_tag(opts, rel_ver, tag_path)
             end
             `rm -f #{tag_path}`
+            return 0
         end
         def validate(opts)
             begin
