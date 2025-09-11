@@ -779,7 +779,47 @@ module GitMaintain
             rescue
                 return false
             end
-
         end
+
+
+        def release_do_add_commit(opts, filelist, commit_path, commit_msg=nil)
+            edit_flag = ""
+            edit_flag = "--edit" if opts[:no_edit] == false
+
+            raise("No commit message provided") if commit_path == nil && commit_msg == nil
+            commit_flag=""
+            if commit_msg != nil
+                commit_flag = "-m '#{commit_msg}'"
+            else
+                commit_flag = "-F '#{commit_path}'"
+            end
+
+            # Add and commit
+            begin
+                @repo.runGit("add  " + filelist.join(" "))
+                @repo.runGitInteractive("commit #{commit_flag} --verbose #{edit_flag} --signoff")
+            rescue RuntimeError
+                raise("Failed to commit on branch #{@local_branch}")
+            end
+            return 0
+        end
+
+        def release_do_tag(opts, version, tag_path)
+            edit_flag = ""
+            edit_flag = "--edit" if opts[:no_edit] == false
+            begin
+                @repo.runGitInteractive("tag -a -s #{version} #{edit_flag} -F #{tag_path}")
+            rescue RuntimeError
+                raise("Failed to tag branch #{@local_branch}")
+            end
+            return 0
+        end
+
+        def release_do_add_commit_tag(opts, filelist, version, message_path)
+            release_do_add_commit(opts, filelist, message_path)
+            release_do_tag(opts, version, message_path)
+           return 0
+        end
+
     end
 end
