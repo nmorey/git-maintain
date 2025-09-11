@@ -41,20 +41,11 @@ $(cat CHANGELOG)
 EOF
 mv CHANGELOG.new CHANGELOG")
 
-            # Add and commit
-            begin
-                @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]\\+/\\1#{new_ver}/g' */*.spec")
-                @repo.runGit("add  CHANGELOG */*.spec")
-                @repo.runGitInteractive("commit -F #{tag_path} --verbose --edit --signoff")
-            rescue RuntimeError
-                raise("Failed to commit on branch #{local_branch}")
-            end
-            begin
-                @repo.runGitInteractive("tag -a -s v#{new_ver} --edit -F #{tag_path}")
-            rescue RuntimeError
-                raise("Failed to tag branch #{local_branch}")
-            end
+            @repo.run("sed -i -e 's/\\(Version:[[:space:]]*\\)[0-9.]\\+/\\1#{new_ver}/g' */*.spec")
+
+            release_do_add_commit_tag(opts, ["CHANGELOG", "*/*.spec"], "v" + new_ver, tag_path)
             `rm -f #{tag_path}`
+            return 0
         end
     end
     class HealthdRepo < Repo
