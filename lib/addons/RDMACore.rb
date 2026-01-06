@@ -109,7 +109,7 @@ mv debian/changelog.new debian/changelog")
                                   nil, "#{commit_msg} #{new_ver}")
 
             if opts[:rel_type] == :stable
-                release_do_tag(opts, rel_ver, tag_path)
+                release_do_tag(opts, "v" + rel_ver, tag_path)
             end
             `rm -f #{tag_path}`
             return 0
