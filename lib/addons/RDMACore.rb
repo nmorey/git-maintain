@@ -106,7 +106,7 @@ mv debian/changelog.new debian/changelog")
 
             # Add and commit
             release_do_add_commit(opts, [ "*/*.spec", "CMakeLists.txt", "debian/changelog" ],
-                                  new_ver, nil, "#{commit_msg} #{new_ver}")
+                                  nil, "#{commit_msg} #{new_ver}")
 
             if opts[:rel_type] == :stable
                 release_do_tag(opts, rel_ver, tag_path)
