@@ -8,33 +8,49 @@ on:
       - v*
 
 jobs:
+  # Job 1: Dynamically determine active Ruby versions
+  setup-matrix:
+    name: Determine Ruby Versions
+    runs-on: ubuntu-latest
+    outputs:
+      ruby-versions: ${{ steps.set-versions.outputs.versions }}
+    steps:
+      - id: set-versions
+        run: |
+          # Fetch the official active Ruby versions list and format as a JSON array
+          VERSIONS=$(curl -s https://cache.ruby-lang.org/pub/misc/ci_versions/cruby.json | jq -c '.')
+          echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
+
+  # Job 2: Build against the retrieved versions
   build:
-    name: Build
-    runs-on: ubuntu-24.04
+    name: Build (Ruby ${{ matrix.ruby-version }})
+    needs: setup-matrix
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     strategy:
       matrix:
-        ruby-version: ['4.0', '3.2', '3.0', '2.7', '2.6', '2.5']
+        ruby-version: ${{ fromJSON(needs.setup-matrix.outputs.ruby-versions) }}
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-tags: 1
         fetch-depth: 0
     - name: Set up Ruby ${{ matrix.ruby-version }}
-      uses: ruby/setup-ruby@ec02537da5712d66d4d50a0f33b7eb52773b5ed1
+      uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby-version }}
-    - run: bundle install
+        bundler-cache: true
     - name: Build gem
       run: |
         gem build git-maintain.gemspec
 
+  # Job 3: Publish the gem
   publish:
     name: Publish
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     needs: build
     permissions:
       contents: read
@@ -45,11 +61,11 @@ jobs:
       with:
         fetch-tags: 1
         fetch-depth: 0
-    - name: Set up Ruby 3.0
-      uses: ruby/setup-ruby@ec02537da5712d66d4d50a0f33b7eb52773b5ed1
+    - name: Set up Ruby (Latest Stable)
+      uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.0'
-    - run: bundle install
+        ruby-version: 'ruby' # 'ruby' points to the latest stable release
+        bundler-cache: true
     - name: Publish to RubyGems
       if: contains(github.ref, 'refs/tags/v')
       run: |
