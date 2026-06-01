@@ -1,42 +1,58 @@
 require 'octokit'
 require 'io/console'
 
+# Main module for git-maintain repository maintenance tool.
 module GitMaintain
-    class NoRefError < RuntimeError
-        def initialize(ref)
-            super("Reference '#{ref}' was not found")
-        end
-    end
+    # Class representing a git repository being maintained by git-maintain.
+    # Handles parsing and caching configuration, querying branches/tags, and executing git commands.
     class Repo < Common
+        # Default name of the validation/upstream repository.
         @@VALID_REPO = "github"
+        # Default name of the stable release repository.
         @@STABLE_REPO = "stable"
+        # Default path to the release package submission helper command.
         @@SUBMIT_BINARY="git-release"
 
+        # List of available actions for Repo class.
         ACTION_LIST = [
             :list_branches,
             :summary,
             # Internal commands for completion
             :list_suffixes, :submit_release
         ]
+        # Description map of actions for CLI help output.
         ACTION_HELP = {
             :submit_release => "Push the tags to 'stable' remote and create the release packages",
             :summary => "Displays a summary of the configuration and the branches git-maintain sees"
         }
 
+        # Factory method to load an instance of the Repo class or its repository-specific subclass.
+        #
+        # @param path [String] Repository directory path (defaults to current working directory)
+        # @return [Repo] The loaded Repo instance (or subclass)
+        # @raise [GitMaintainError] If class loading fails
         def self.load(path=".")
             dir = File.realdirpath(path)
             repo_name = File.basename(dir)
             return GitMaintain::loadClass(Repo, repo_name, dir)
         end
 
+        # Validate parsed options for repository-level actions.
+        #
+        # @param opts [Hash] Options hash to validate
+        # @raise [GitMaintainError] If options are invalid or conflicting
         def self.check_opts(opts)
             if opts[:action] == :submit_release then
                 if opts[:br_suff] != "master" then
-                    raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
+                    raise GitMaintainError.new("Action #{opts[:action]} can only be done on 'master' suffixed branches")
                 end
             end
         end
 
+        # Initialize the Repo instance, parsing git configurations and detecting remotes/formats.
+        #
+        # @param path [String, nil] Repository directory path (defaults to current working directory)
+        # @raise [GitMaintainError] If configuration format or values are invalid
         def initialize(path=nil)
             GitMaintain::checkDirectConstructor(self.class)
 
@@ -70,7 +86,7 @@ module GitMaintain
             when "false", "no", "off"
                 @auto_fetch = false
             else
-                raise("Invalid value '#{@auto_fetch}' in git config for maintain.autofetch")
+                raise GitMaintainError.new("Invalid value '#{@auto_fetch}' in git config for maintain.autofetch")
             end
 
             @branch_format_raw = getGitConfig("maintain.branch-format")
@@ -94,7 +110,7 @@ module GitMaintain
                 case @mail_format
                 when "imap_send", "send_email"
                 else
-                    raise("Invalid mail-format #{@mail_format}")
+                    raise GitMaintainError.new("Invalid mail-format #{@mail_format}")
                 end
 
                 @mail_format = @mail_format.to_sym()
@@ -104,43 +120,23 @@ module GitMaintain
 
 
 
-        def _run_check_ret(ret, opts)
-            raise(RuntimeError.new(ret)) if $?.exitstatus != 0 && opts.fetch(:check_err, true) == true
-        end
-        def run(cmd, opts = {})
-            ret = `cd #{@path} && #{cmd}`
-            _run_check_ret(ret, opts)
-            return ret
-        end
-        def runSystem(cmd, opts = {})
-            ret = system("cd #{@path} && #{cmd}")
-            _run_check_ret(nil, opts)
-            return ret
-
-        end
-        def runGit(cmd, opts = {})
-            log(:DEBUG, "Called from #{caller[1]}")
-            log(:DEBUG, "Running git command '#{cmd}'")
-            ret = `git --work-tree=#{@path} #{cmd}`.chomp()
-            _run_check_ret(ret, opts)
-            return ret
-        end
-        def runGitInteractive(cmd, opts = {})
-            log(:DEBUG, "Called from #{caller[1]}")
-            log(:DEBUG, "Running interactive git command '#{cmd}'")
-            ret = system("git --work-tree=#{@path} #{cmd}")
-            _run_check_ret(nil, opts)
-            return ret
-
-        end
+        # Check if the specified git reference exists.
+        #
+        # @param ref [String] Git reference to verify (e.g. 'HEAD' or 'origin/master')
+        # @return [String] Resolved SHA-1 string of the reference
+        # @raise [NoRefError] If the reference does not exist
         def ref_exist?(ref)
             begin
                 return runGit("rev-parse --verify --quiet '#{ref}'")
-            rescue RuntimeError
+            rescue RunError
                 raise(NoRefError.new(ref))
             end
         end
 
+        # Run a git imap-send command setting GIT_ASKPASS environment variables.
+        #
+        # @param cmd [String] The command arguments
+        # @return [String] Output of the command execution
         def runGitImap(cmd)
             return `export GIT_ASKPASS=$(dirname $(dirname $(which git)))/lib/git-core/git-gui--askpass;
                   if [ ! -f $GIT_ASKPASS ]; then
@@ -150,45 +146,80 @@ module GitMaintain
                   	export GIT_ASKPASS=/usr/lib/ssh/ssh-askpass;
                   fi; git --work-tree=#{@path} imap-send #{cmd}`
         end
+
+        # Retrieve a git configuration value, with caching.
+        #
+        # @param entry [String] Config key name (e.g., 'user.name')
+        # @return [String] Cached or fetched config value string
+        # @raise [RunError] If running git config fails unexpectedly
         def getGitConfig(entry)
-            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null", :check_err => false).chomp()
+            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null", {}, false).chomp()
         end
 
+        # Spawn an interactive subshell (bash), wrapping error conditions into a GitMaintainError.
+        #
+        # @param env [String] Optional environment variables string to prepend
+        # @raise [GitMaintainError] If the shell exits with a non-zero code and is cancelled by the user
         def runBash(env="")
             begin
                 runSystem(env + " bash")
-            rescue RuntimeError
+            rescue RunError
                 log(:ERROR, "Shell exited with code #{$?}. Exiting")
-                raise("Cancelled by user")
+                raise GitMaintainError.new("Cancelled by user")
             end
             log(:INFO, "Continuing...")
 
         end
 
+        # Get the single-line headline/oneline description of a commit SHA.
+        #
+        # @param sha [String] Commit SHA
+        # @return [String] Single-line description (oneline)
+        # @raise [RunError] If git command execution fails
         def getCommitHeadline(sha)
             return runGit("show --format=oneline --no-patch --no-decorate #{sha}")
         end
+
+        # Get the commit subject text.
+        #
+        # @param sha [String] Commit SHA
+        # @return [String] The commit subject string
+        # @raise [RunError] If git command execution fails
         def getCommitSubj(sha)
             return runGit("log -1 --pretty=\"%s\" #{sha}")
         end
 
+        # Fetch stable updates if auto-fetching is enabled.
+        #
+        # @param fetch [Boolean, nil] Override to bypass or force fetch configuration
+        # @raise [RunError] If git fetch execution fails
         def stableUpdate(fetch=nil)
             fetch = @auto_fetch if fetch == nil
             return if fetch == false
             log(:VERBOSE, "Fetching stable updates...")
             runGit("fetch #{@stable_repo}")
         end
+
+        # List all local branches matching the configured stable suffix name.
+        #
+        # @param br_suff [String] Branch suffix (e.g. 'master')
+        # @return [Array<String>] List of matching branch version strings (e.g., ['1.0'])
+        # @raise [RunError] If git branch execution fails
         def getBranchList(br_suff)
             return @branch_list if @branch_list != nil
 
             @branch_list=runGit("branch").split("\n").map(){|x|
-                x=~ /#{@branch_format_raw}\/#{br_suff}$/ ? 
+                x=~ /#{@branch_format_raw}\/#{br_suff}$/ ?
                     $1 : nil
             }.compact().uniq()
 
             return @branch_list
         end
 
+        # List all remote stable branches from the stable remote.
+        #
+        # @return [Array<String>] List of remote stable branch version strings
+        # @raise [RunError] If git branch execution fails
         def getStableBranchList()
             return @stable_branches if @stable_branches != nil
 
@@ -200,11 +231,15 @@ module GitMaintain
             return @stable_branches
         end
 
+        # Get all local branch suffix values.
+        #
+        # @return [Array<String>] List of local branch suffixes
+        # @raise [RunError] If git branch execution fails
         def getSuffixList()
             return @suffix_list if @suffix_list != nil
 
             @suffix_list = runGit("branch").split("\n").map(){|x|
-                x=~ @branch_format ? 
+                x=~ @branch_format ?
                     /^\*?\s*#{@branch_format_raw}\/([a-zA-Z0-9_-]+)\s*$/.match(x)[-1] :
                     nil
             }.compact().uniq()
@@ -212,6 +247,11 @@ module GitMaintain
             return @suffix_list
         end
 
+        # Find local release tags that have not yet been pushed to the remote stable repository.
+        #
+        # @param opts [Hash] Options hash
+        # @return [Array<String>] List of unreleased version tags (e.g. ['v1.0.1'])
+        # @raise [RunError] If running git ls-remote or git tag fails
         def getUnreleasedTags(opts)
             remote_tags=runGit("ls-remote --tags #{@stable_repo} |
                                  grep -E 'refs/tags/v[0-9.]*$'").split("\n").map(){
@@ -222,6 +262,12 @@ module GitMaintain
             new_tags = local_tags - remote_tags
             return new_tags
         end
+
+        # Generate and transmit or save a release announcement email.
+        #
+        # @param opts [Hash] Options hash
+        # @param new_tags [Array<String>] List of newly released tags
+        # @raise [RunError] If running git show or other execution commands fails
         def genReleaseNotif(opts, new_tags)
             return if @NOTIFY_RELEASE == false
 
@@ -270,12 +316,25 @@ module GitMaintain
             end
             run("rm -f #{mail_path}")
         end
+
+        # Submit release tags by delegating to `createRelease`.
+        #
+        # @param opts [Hash] Options hash
+        # @param new_tags [Array<String>] List of release tags to submit
+        # @raise [GitMaintainError] If submitting release fails
         def submitReleases(opts, new_tags)
             new_tags.each(){|tag|
                 createRelease(opts, tag)
             }
         end
 
+        # Create a release for the specified tag on GitHub.
+        # Pushes the tag to the remote stable repository and optionally calls GitHub release API.
+        #
+        # @param opts [Hash] Options hash
+        # @param tag [String] Release tag name (e.g. 'v1.0.1')
+        # @param github_rel [Boolean] True to create a GitHub release via API
+        # @raise [GitMaintainError] If git pushing or API release creation fails
         def createRelease(opts, tag, github_rel=true)
             log(:INFO, "Creating a release for #{tag}")
 	    runGit("push #{@stable_repo} refs/tags/#{tag}")
@@ -291,15 +350,29 @@ module GitMaintain
             end
         end
 
+        # Map a version number and suffix to a local branch name.
+        #
+        # @param version [String] Version string (e.g., '1.0')
+        # @param suff [String] Suffix string
+        # @return [String] Local branch name (e.g., 'stable/1.0/master')
         def versionToLocalBranch(version, suff)
             return @branch_format_raw.gsub(/\\\//, '/').
                        gsub(/\(.*\)/, version) + "/#{suff}"
         end
 
+        # Map a version number to a stable branch name.
+        #
+        # @param version [String] Version string
+        # @return [String] Stable branch name
         def versionToStableBranch(version)
             return version.gsub(/^(.*)$/, @stable_branch_format)
         end
 
+        # Resolve the stable base commit/reference for a given branch.
+        #
+        # @param branch [String] Local branch name
+        # @return [String] Resolvable stable base reference
+        # @raise [GitMaintainError] If no stable base can be resolved for the branch
         def findStableBase(branch)
             base=nil
             if branch =~ @branch_format then
@@ -312,16 +385,30 @@ module GitMaintain
                     break
                 end
             }
-            raise("Could not a find a stable base for branch #{branch}") if base == nil
+            raise GitMaintainError.new("Could not a find a stable base for branch #{branch}") if base == nil
             return base
         end
 
+        # Print the local stable branches list to standard output.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [RunError] If running git branch fails
         def list_branches(opts)
             puts getBranchList(opts[:br_suff])
         end
+
+        # Print all detected branch suffixes to standard output.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [RunError] If running git branch fails
         def list_suffixes(opts)
             puts getSuffixList()
         end
+
+        # Find and submit any unreleased tags, generating announcements and creating GitHub releases.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If the release submission is aborted or fails
         def submit_release(opts)
             new_tags = getUnreleasedTags(opts)
             if new_tags.empty? then
@@ -330,9 +417,9 @@ module GitMaintain
             end
 
             log(:WARNING, "This will officially release these tags: #{new_tags.join(", ")}")
-            rep = GitMaintain::confirm(opts, "release them", true)
+            rep = confirm(opts, "release them", true)
             if rep != 'y' then
-                raise "Aborting.."
+                raise GitMaintainError.new("Aborting..")
             end
 
             if @NOTIFY_RELEASE != false
@@ -340,12 +427,17 @@ module GitMaintain
             end
 
             log(:WARNING, "Last chance to cancel before submitting")
-            rep= GitMaintain::confirm(opts, "submit these releases", true)
+            rep= confirm(opts, "submit these releases", true)
             if rep != 'y' then
-                raise "Aborting.."
+                raise GitMaintainError.new("Aborting..")
             end
             submitReleases(opts, new_tags)
         end
+
+        # Print a diagnostic summary of the repository configuration and detected local/upstream branches.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [RunError] If running git commands fails
         def summary(opts)
             log(:INFO, "Configuration summary:")
             if self.class != GitMaintain::Repo then
@@ -398,12 +490,18 @@ module GitMaintain
                 }
             end
         end
+
+        # Search remote stable branches for alternative commit SHAs with the same commit subject.
+        #
+        # @param commit [String] Original commit SHA
+        # @return [Array<String>] List of alternative commit SHAs with identical subject
+        # @raise [RunError] If running git commands fails
         def find_alts(commit)
             alts=[]
 
             begin
                 subj=runGit("log -1 --pretty='%s' #{commit}")
-            rescue RuntimeError
+            rescue RunError
                 return []
             end
 
@@ -419,49 +517,58 @@ module GitMaintain
             return alts
         end
 
+        # Get or initialize the Octokit GitHub API client.
         #
-        # Github API stuff
-        #
-	def api
-	    @api ||= Octokit::Client.new(:access_token => token, :auto_paginate => true)
-	end
+        # @return [Octokit::Client] The initialized API client instance
+        def api
+            @api ||= Octokit::Client.new(:access_token => token, :auto_paginate => true)
+        end
 
-	def token
-	    @token ||= begin
-			   # We cannot use the 'defaults' functionality of git_config here,
-			   # because get_new_token would be evaluated before git_config ran
-			   tok = getGitConfig("maintain.api-token")
+        # Get or fetch the cached GitHub OAuth API token.
+        #
+        # @return [String] The API token string
+        def token
+            @token ||= begin
+                           # We cannot use the 'defaults' functionality of git_config here,
+                           # because get_new_token would be evaluated before git_config ran
+                           tok = getGitConfig("maintain.api-token")
                            tok.to_s() == "" ? get_new_token : tok
-		       end
-	end
- 	def get_new_token
-	    puts "Requesting a new OAuth token from Github..."
-	    print "Github username: "
-	    user = $stdin.gets.chomp
-	    print "Github password: "
-	    pass = $stdin.noecho(&:gets).chomp
-	    puts
+                       end
+        end
 
-	    api = Octokit::Client.new(:login => user, :password => pass)
+        # Interactively prompt the user for GitHub credentials to create and save a new OAuth token.
+        # Supports two-factor authentication (OneTimePasswordRequired).
+        #
+        # @return [String] The newly generated API token
+        # @raise [Octokit::Unauthorized] If username/password is incorrect
+        def get_new_token
+            puts "Requesting a new OAuth token from Github..."
+            print "Github username: "
+            user = $stdin.gets.chomp
+            print "Github password: "
+            pass = $stdin.noecho(&:gets).chomp
+            puts
 
-	    begin
-		res = api.create_authorization(:scopes => [:repo], :note => "git-maintain")
-	    rescue Octokit::Unauthorized
-		puts "Username or password incorrect.  Please try again."
-		return get_new_token
+            api = Octokit::Client.new(:login => user, :password => pass)
+
+            begin
+                res = api.create_authorization(:scopes => [:repo], :note => "git-maintain")
+            rescue Octokit::Unauthorized
+                puts "Username or password incorrect.  Please try again."
+                return get_new_token
             rescue Octokit::OneTimePasswordRequired
-		print "Github OTP: "
-		otp = $stdin.noecho(&:gets).chomp
-		res = api.create_authorization(:scopes => [:repo], :note => "git-maintain",
+                print "Github OTP: "
+                otp = $stdin.noecho(&:gets).chomp
+                res = api.create_authorization(:scopes => [:repo], :note => "git-maintain",
                                                :headers => {"X-GitHub-OTP" => otp})
-	    end
+            end
 
-	    token = res[:token]
-	    runGit("config --global maintain.api-token '#{token}'")
+            token = res[:token]
+            runGit("config --global maintain.api-token '#{token}'")
 
             # Now reopen with the token so OTP does not bother us
             @api=nil
             token
-	end
+        end
     end
 end

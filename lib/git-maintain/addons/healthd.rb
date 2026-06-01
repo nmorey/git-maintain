@@ -1,7 +1,16 @@
+# Module containing addon classes for healthd repository.
 module GitMaintain
+
+    # Subclass of Branch customized for the healthd repository.
     class HealthdBranch < Branch
+        # The name of this repository.
         REPO_NAME = "healthd"
 
+        # Create a new release for healthd.
+        # Updates CHANGELOG, spect files, commits, and tags the release.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If prepping, committing, or tagging fails
         def release(opts)
             prev_ver=@repo.runGit("show HEAD:CHANGELOG | grep -A 1 -- '---------'  | head -n 2 | tail -n 1 | awk '{ print $1}'").chomp()
             ver_nums = prev_ver.split(".")
@@ -45,10 +54,14 @@ mv CHANGELOG.new CHANGELOG")
 
             release_do_add_commit_tag(opts, ["CHANGELOG", "*/*.spec"], "v" + new_ver, tag_path)
             `rm -f #{tag_path}`
-            return 0
         end
     end
+
+    # Repo class customized for the healthd repository.
     class HealthdRepo < Repo
+        # Initialize HealthdRepo with release notifications disabled.
+        #
+        # @param path [String] Repository directory path
         def initialize(path)
             super(path)
             @NOTIFY_RELEASE = false

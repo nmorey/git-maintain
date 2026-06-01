@@ -27,10 +27,10 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 - Load git-maintain-completion.sh for shell completion
 
 ## Remote setup
-- the 'github' remote should be your own WIP github to test out branches before submitting to the official repo.  
+- the 'github' remote should be your own WIP github to test out branches before submitting to the official repo.
   Also know as the 'Validation' repo. It can be switched to another remote by setting maintain.valid-repo=xxx in your gitconfig
 - the 'origin' remote should be the official repo in read-only mode to avoid any accidental pushes
-- the 'stable' remote should be the official repo in RW mode.  
+- the 'stable' remote should be the official repo in RW mode.
   Also know as the 'Stable' repo. It can be switched to another remote by setting maintain.stable-repo=xxx in your gitconfig
 
 ## Stealing commits
@@ -38,10 +38,10 @@ The idea is to script most of the maintenance tasks so the maintainer can focus 
 The steal feature uses was shamelessly copied it from https://git.kernel.org/pub/scm/linux/kernel/git/sashal/stable-tools.git/tree/
 
 ## Making releases
-The release process being very specific to each project, the release command does nothing by default.  
+The release process being very specific to each project, the release command does nothing by default.
 However the behaviour can be overriden for specific repo (detected by repo name)
 
-Check the lib/addons/RDMACore.rb for an example.  
+Check the lib/addons/RDMACore.rb for an example.
 In this case, the release command bump the version in all the appropriate files (after computing the previous and next version numbers), commit and tags the commit.
 
 
@@ -122,12 +122,12 @@ $ git maintain summary
 # INFO: Configuration summary:
 # INFO: Stable remote: stable
 # INFO: Validation remote: github
-# INFO: 
+# INFO:
 # INFO: Branch config:
 # INFO: Local branch format: /dev\/stable-v([0-9]*)/
 # INFO: Remote stable branch format: stable-v\1
 # INFO: Remote stable base format: v\1
-# INFO: 
+# INFO:
 # INFO: Local branches:
 # INFO: dev/stable-v15/master -> stable/stable-v15
 # INFO: dev/stable-v16/master -> stable/stable-v16
@@ -137,7 +137,7 @@ $ git maintain summary
 # INFO: dev/stable-v20/master -> stable/stable-v20
 # INFO: dev/stable-v21/master -> stable/stable-v21
 # INFO: dev/stable-v22/master -> stable/stable-v22
-# INFO: 
+# INFO:
 # INFO: Upstream branches:
 # INFO: <MISSING> -> stable/stable-v23
 ```
@@ -262,16 +262,16 @@ This is a summary of all the settings that can be set in the git config:
 
 - `maintain.valid-repo`: Remote github repo to test out branches before submitting. Default = `github`
 - `maintain.stable-repo`: Remote stable github repository t submit validated branches and new releases. Default = `stable`
-- `maintain.autofetch`: Enable/Disable auto fetching.  
-   Can be overriden by the --[no-]fetch option on the CLI.  
+- `maintain.autofetch`: Enable/Disable auto fetching.
+   Can be overriden by the --[no-]fetch option on the CLI.
    If unset, autofetch is enabled
-- `maintain.branch-format`: Local branch name space that also extracts the version.  
+- `maintain.branch-format`: Local branch name space that also extracts the version.
    Example: dev\/stable-v([0-9]*) will allow all branch names dev/stable-vXXX/foo to be used against stable branch with version XXX
-- `maintain.stable-branch-format`: Name of the stable branch generated with the version extracted by the `maintain.branch-format` regexp.  
+- `maintain.stable-branch-format`: Name of the stable branch generated with the version extracted by the `maintain.branch-format` regexp.
    Example: stable-v\1 will track dev/stable-vXXX/foo against <STABLE_REPO>/stable-vXXX
-- `maintain.stable-base-format`: Name of the tag from which the stable branch was forked from generated with the version extracted by the `maintain.branch-format` regexp.  
-   Example: v\1 will be mark vXXX has the fork tag for branch <STABLE_REPO>/stable-vXXX and local branch dev/stable-vXXX/foo  
-   This settings is only needed when using `git maintain steal` command  
+- `maintain.stable-base-format`: Name of the tag from which the stable branch was forked from generated with the version extracted by the `maintain.branch-format` regexp.
+   Example: v\1 will be mark vXXX has the fork tag for branch <STABLE_REPO>/stable-vXXX and local branch dev/stable-vXXX/foo
+   This settings is only needed when using `git maintain steal` command
    This rule can be overriden by a specific entry in gitconfig:
    `stable-base.dev---stable-vXXX vYY-ZZ`
    As git does not allow `/` in gitconfig they are to be replaced by `---`

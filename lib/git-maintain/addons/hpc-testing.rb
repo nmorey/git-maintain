@@ -1,6 +1,16 @@
+# Module containing addon classes for hpc-testing repository.
 module GitMaintain
+
+    # Subclass of Branch customized for the hpc-testing repository.
     class HPCTestingBranch < Branch
+        # The name of this repository.
         REPO_NAME = "hpc-testing"
+
+        # Configure hpc-testing release options.
+        #
+        # @param action [Symbol] Selected action name
+        # @param optsParser [OptionParser] The OptionParser instance
+        # @param opts [Hash] The options hash to populate
         def self.set_opts(action, optsParser, opts)
             opts[:auto_news] = false
 
@@ -8,8 +18,14 @@ module GitMaintain
             when :release
                  optsParser.on("--auto-news", "Auto-generate NEWS entries.") {
                      opts[:auto_news] = true }
-           end
+            end
         end
+
+        # Create a new release for hpc-testing.
+        # Updates spec files, NEWS, commits, and tags the release.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If prepping, committing, or tagging fails
         def release(opts)
             prev_ver=@repo.runGit("show HEAD:rpm/hpc-testing.spec  | grep Version: | awk '{ print $NF}'").
                          chomp()
@@ -54,15 +70,26 @@ mv NEWS.new NEWS")
 
             release_do_add_commit_tag(opts, ["rpm/hpc-testing.spec", "NEWS"], "v" + new_ver, tag_path)
             `rm -f #{tag_path}`
-            return 0
         end
 
+        # Initialize HPCTestingBranch, forcing NO_CI to true.
+        #
+        # @param repo [Repo] The Repo instance
+        # @param version [String] Suffix version or branch name
+        # @param ci [CI] The CI instance
+        # @param branch_suff [String] Branch suffix
+        # @raise [NoRefError] If resolving git references fails
         def initialize(repo, version, ci, branch_suff)
             super(repo, version, ci, branch_suff)
             @NO_CI = true
         end
     end
+
+    # Repo class customized for the hpc-testing repository.
     class HPCTestingRepo < Repo
+        # Initialize HPCTestingRepo with release notifications disabled.
+        #
+        # @param path [String] Repository directory path
         def initialize(path)
             super(path)
             @NOTIFY_RELEASE = false

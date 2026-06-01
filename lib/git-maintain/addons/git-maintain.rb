@@ -1,6 +1,16 @@
+# Module containing addon classes for git-maintain repository itself.
 module GitMaintain
+
+    # Subclass of Branch customized for the git-maintain repository.
     class GitMaintainBranch < Branch
+        # The name of this repository.
         REPO_NAME = "git-maintain"
+
+        # Configure release-specific command line options.
+        #
+        # @param action [Symbol] Selected action name
+        # @param optsParser [OptionParser] The OptionParser instance
+        # @param opts [Hash] The options hash to populate
         def self.set_opts(action, optsParser, opts)
             opts[:rel_type] = nil
 
@@ -13,13 +23,18 @@ module GitMaintain
                  optsParser.on("--stable", "Release a stable version.") {
                      opts[:rel_type] = :stable
                  }
-           end
+            end
         end
+
+        # Validate release-specific command line options.
+        #
+        # @param opts [Hash] Options hash to validate
+        # @raise [GitMaintainError] If rel_type is not specified
         def self.check_opts(opts)
             if opts[:action] == :release then
                 case opts[:rel_type]
                 when nil
-                    raise "No release type specified use --stable or --major"
+                    raise GitMaintainError.new("No release type specified use --stable or --major")
                 when :major
                     if opts[:manual_branch] == nil then
                         GitMaintain::log(:INFO, "Major release selected. Auto-forcing branch to master")
@@ -28,6 +43,12 @@ module GitMaintain
                 end
             end
         end
+
+        # Create a new release for git-maintain.
+        # Updates CHANGELOG, commits, and tags the release.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If prepping, committing, or tagging fails
         def release(opts)
             prev_ver=@repo.runGit("show HEAD:CHANGELOG | grep -A 1 -- '---------'  | head -n 2 | tail -n 1 | awk '{ print $1}'").chomp()
             ver_nums = prev_ver.split(".")
@@ -71,10 +92,14 @@ mv CHANGELOG.new CHANGELOG")
 
             release_do_add_commit_tag(opts, ["CHANGELOG"], "v" + new_ver, tag_path)
             `rm -f #{tag_path}`
-            return 0
         end
     end
+
+    # Repo class customized for the git-maintain repository.
     class GitMaintainRepo < Repo
+        # Initialize GitMaintainRepo with release notifications disabled.
+        #
+        # @param path [String] Repository directory path
         def initialize(path)
             super(path)
             @NOTIFY_RELEASE = false
@@ -84,9 +109,13 @@ mv CHANGELOG.new CHANGELOG")
                                 { GitMaintain::Branch => GitMaintainBranch,
                                   GitMaintain::Repo => GitMaintainRepo})
 
+    # Subclass of GitMaintainBranch for cli_class_tool repository.
     class CLIClassToolBranch < GitMaintainBranch
+        # Repository name constant for cli_class_tool.
         REPO_NAME = "cli_class_tool"
     end
+
+    # Subclass of GitMaintainRepo for cli_class_tool repository.
     class CLIClassToolRepo < GitMaintainRepo
     end
 

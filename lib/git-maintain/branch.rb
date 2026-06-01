@@ -1,28 +1,27 @@
+# Main module for git-maintain repository maintenance tool.
 module GitMaintain
 
-    class CherryPickErrorException < StandardError
-        def initialize(str, commit)
-            @commit = commit
-            super(str)
-        end
-        attr_reader :commit
-    end
-
+    # Class representing a single stable branch and actions that can be performed on it.
     class Branch < Common
+        # List of all available maintenance actions.
         ACTION_LIST = [
             :cp, :steal, :list,
             :merge, :pull, :push, :monitor,
             :release, :reset, :create, :delete
         ]
+        # Actions that do not require updating the remote repository first.
         NO_FETCH_ACTIONS = [
             :cp, :merge, :monitor, :release, :delete
         ]
+        # Actions that do not require checking out the local branch before running.
         NO_CHECKOUT_ACTIONS = [
             :create, :delete, :list, :push, :monitor
         ]
+        # Actions that run on all branches, regardless of target versions.
         ALL_BRANCHES_ACTIONS = [
             :create
         ]
+        # Description map of actions for CLI help output.
         ACTION_HELP = {
             :cp => "Backport commits and eventually push them to github",
             :create => "Create missing local branches from all the stable branches",
@@ -37,11 +36,24 @@ module GitMaintain
             :reset => "Reset branch against upstream",
         }
 
+        # Factory method to load an instance of the Branch class or its repository-specific subclass.
+        #
+        # @param repo [Repo] The Repo instance
+        # @param version [String] The branch version (e.g., '1.0')
+        # @param ci [CI] The CI instance
+        # @param branch_suff [String] Suffix of the branch (e.g., 'master')
+        # @return [Branch] The loaded Branch instance (or subclass)
+        # @raise [GitMaintainError] If class loading fails
         def self.load(repo, version, ci, branch_suff)
             repo_name = File.basename(repo.path)
             return GitMaintain::loadClass(Branch, repo_name, repo, version, ci, branch_suff)
         end
 
+        # Configure action-specific command line options.
+        #
+        # @param action [Symbol] Selected action name
+        # @param optsParser [OptionParser] The OptionParser instance to configure
+        # @param opts [Hash] The options hash to populate
         def self.set_opts(action, optsParser, opts)
             opts[:base_ver] = 0
             opts[:version] = []
@@ -123,25 +135,35 @@ module GitMaintain
             end
         end
 
+        # Sanity check and normalize the parsed options for the given action.
+        #
+        # @param opts [Hash] Options hash to validate and configure
+        # @raise [InvalidArgumentError] If options are invalid or conflicting
         def self.check_opts(opts)
             if opts[:action] == :release then
                 if opts[:br_suff] != "master" then
-                    raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
+                    raise InvalidArgumentError.new("Action #{opts[:action]} can only be done on 'master' suffixed branches")
                 end
             end
             if opts[:action] == :delete && opts[:delete_remote] != true then
                 if opts[:br_suff] == "master" then
-                    raise "Action #{opts[:action]} can NOT be done on 'master' suffixed branches"
+                    raise InvalidArgumentError.new("Action #{opts[:action]} can NOT be done on 'master' suffixed branches")
                 end
             end
             if opts[:action] == :push
                 if opts[:stable] == true && opts[:push_force] == true then
-                    raise "Action push  can NOT be use both --stable and --force"
+                    raise InvalidArgumentError.new("Action push  can NOT be use both --stable and --force")
                 end
             end
             opts[:version] = [ /.*/ ] if opts[:version].length == 0
         end
 
+        # Execute the specified action on the selected branch(es).
+        # Loads the repo, targets branches, iterates through them, and runs any action epilogue.
+        #
+        # @param opts [Hash] Options hash
+        # @param action [Symbol] Action name to execute
+        # @raise [GitMaintainError] If executing the action fails
         def self.execAction(opts, action)
             repo   = Repo::load()
             ci = CI::load(repo)
@@ -196,7 +218,7 @@ module GitMaintain
                 # Run epilogue (if it exists)
                 begin
                     brClass.send(action.to_s() + "_epilogue", opts, res)
-                rescue NoMethodError => e
+                rescue NoMethodError
                 end
 
                 break if opts[:watch] == false
@@ -207,9 +229,17 @@ module GitMaintain
 
         end
 
+        # Initialize a new Branch instance, resolving local/remote branches, head references, and stable base.
+        #
+        # @param repo [Repo] The Repo instance
+        # @param version [String] Suffix version (e.g. '1.0') or branch name
+        # @param ci [CI] The CI instance
+        # @param branch_suff [String] Branch suffix (e.g. 'master')
+        # @raise [NoRefError] If resolving git references fails
         def initialize(repo, version, ci, branch_suff)
             GitMaintain::checkDirectConstructor(self.class)
 
+            @path          = repo.path
             @repo          = repo
             @ci            = ci
             @version       = version
@@ -229,7 +259,7 @@ module GitMaintain
             @head          = @repo.ref_exist?(@local_branch)
             @valid_ref     = "#{@repo.valid_repo}/#{@local_branch}"
             @remote_ref    = "#{@repo.stable_repo}/#{@remote_branch}"
-            @stable_head   = 
+            @stable_head   =
                 begin
                     @repo.ref_exist?(@remote_ref)
                 rescue
@@ -247,6 +277,10 @@ module GitMaintain
 
 
 
+        # Check if the branch matches specified target version options.
+        #
+        # @param opts [Hash] Options hash with version/base filters
+        # @return [Boolean, Symbol] `true` if targeted, `:too_old` or `:no_match` otherwise
         def is_targetted?(opts)
             return true if @branch_type == :user_specified
             if @version.to_i < opts[:base_ver] then
@@ -258,27 +292,34 @@ module GitMaintain
             return :no_match
         end
 
-        # Checkout the repo to the given branch
+        # Checkout the git repository to this branch's local branch.
+        #
+        # @raise [RunError] If git checkout execution fails
         def checkout()
-            begin
-                print @repo.runGit("checkout -q #{@local_branch}")
-            rescue RuntimeError => e
-                crit("Failed to checkout the branch #{@local_branch}")
-            end
+            runGitInteractive("checkout -q #{@local_branch}")
         end
 
-        # Cherry pick an array of commits
+        # Backport/cherry-pick the given array of commits into this branch.
+        #
+        # @param opts [Hash] Options hash containing `:commits` to pick
+        # @raise [CPAbort] If cherry-pick is aborted by the user
         def cp(opts)
             opts[:commits].each(){|commit|
-                prev_head=@repo.runGit("rev-parse HEAD")
+                prev_head=runGit("rev-parse HEAD")
                 log(:INFO, "Applying #{@repo.getCommitHeadline(commit)}")
                 begin
-                    @repo.runGitInteractive("cherry-pick #{commit}")
-                rescue RuntimeError
-                    log(:WARNING, "Cherry pick failure. Starting bash for manual fixes. Exit shell to continue")
-		    @repo.runBash("PS1_WARNING='CP FIX'")
+                    runGitInteractive("cherry-pick #{commit}")
+                rescue RunError
+                    begin
+                        cp_fix(opts, commit)
+                    rescue CPSkip => e
+                        log(:INFO, e.message)
+                    rescue CPAbort => e
+                        log(:INFO, "Cherry-pick aborted by user.")
+                        raise e
+                    end
 		end
-                new_head=@repo.runGit("rev-parse HEAD")
+                new_head=runGit("rev-parse HEAD")
                 # Do not make commit pretty if it was not applied
                 if new_head != prev_head
 		    make_pretty(commit)
@@ -286,7 +327,11 @@ module GitMaintain
             }
         end
 
-        # Steal upstream commits that are not in the branch
+        # Steal upstream commits that are not present in this branch.
+        # Uses `steal_all` and marks the last successful run with a git tag if successful.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [RunError] If git tags/execution fails
         def steal(opts)
             base_ref=@stable_base
 
@@ -295,51 +340,61 @@ module GitMaintain
             case opts[:steal_base]
             when nil
                 begin
-                    sha = @repo.runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
+                    sha = runGit("rev-parse 'git-maintain/steal/last/#{@stable_base}' 2>&1")
                     base_ref=sha
                     log(:VERBOSE, "Starting from last successfull run:")
                     log(:VERBOSE, @repo.getCommitHeadline(base_ref))
-                rescue RuntimeError
+                rescue RunError
                     # No matching tag found. Not an issue
                 end
             when :all
                 base_ref=@stable_base
             else
                 begin
-                    sha = @repo.runGit("rev-parse #{opts[:steal_base]} 2>&1")
+                    sha = runGit("rev-parse #{opts[:steal_base]} 2>&1")
                     base_ref=sha
                     log(:VERBOSE, "Starting from base:")
                     log(:VERBOSE, @repo.getCommitHeadline(base_ref))
-                rescue RuntimeError
+                rescue RunError
                     crit("Could not find specified base '#{opts[:steal_base]}'")
                 end
             end
 
-            master_sha=@repo.runGit("rev-parse origin/master")
-            res = steal_all(opts, "#{base_ref}..#{master_sha}", true)
+            master_sha=runGit("rev-parse origin/master")
 
-            # If we picked all the commits (or nothing happened)
-            # Mark the current master as the last checked point so we
-            # can just steal from this point on the next run
-            if res == true then
-                @repo.runGit("tag -f 'git-maintain/steal/last/#{@stable_base}' origin/master")
+            begin
+                steal_all(opts, "#{base_ref}..#{master_sha}", true)
+
+                # We picked all the commits (or nothing happened)
+                # Mark the current master as the last checked point so we
+                # can just steal from this point on the next run
+                runGit("tag -f 'git-maintain/steal/last/#{@stable_base}' origin/master")
                 log(:VERBOSE, "Marking new last successfull run at:")
                 log(:VERBOSE, @repo.getCommitHeadline(master_sha))
+            rescue CPSkip
+                # Ignore the error
             end
         end
 
+        # List all unreleased stable commits or commits in this branch but not in stable.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [RunError] If running git commands fails
         def list(opts)
             GitMaintain::log(:INFO, "Working on #{@verbose_name}")
             if opts[:stable] == true then
                 # List commits in the stable_branch that are no in the latest release
-                showLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"))
+                showLog(opts, @remote_ref, runGit("describe --abbrev=0 #{@local_branch}"))
             else
                 # List commits in the branch that are no in the stable branch
                 showLog(opts, @local_branch, @remote_ref)
             end
         end
 
-        # Merge merge_branch into this one
+        # Merge the specified merge branch into this branch.
+        #
+        # @param opts [Hash] Options hash containing `:do_merge` branch name
+        # @raise [RunError] If running git merge or system commands fails
         def merge(opts)
             merge_branch = @repo.versionToLocalBranch(@version, opts[:do_merge])
 
@@ -352,7 +407,7 @@ module GitMaintain
             end
 
             # See if there is anything worth merging
-            merge_base_hash = @repo.runGit("merge-base #{merge_branch} #{@local_branch}")
+            merge_base_hash = runGit("merge-base #{merge_branch} #{@local_branch}")
             if merge_base_hash == hash_to_merge then
                 log(:INFO, "Branch #{merge_branch} has no commit that needs to be merged")
                 return
@@ -361,17 +416,22 @@ module GitMaintain
             rep = checkLog(opts, merge_branch, @local_branch, "merge")
             if rep == "y" then
                 begin
-                    @repo.runGitInteractive("merge #{merge_branch}")
-                rescue RuntimeError
+                    runGitInteractive("merge #{merge_branch}")
+                rescue RunError
                     log(:WARNING, "Merge failure. Starting bash for manual fixes. Exit shell to continue")
-		    @repo.runBash("PS1_WARNING='MERGING'")
+		    runBash("PS1_WARNING='MERGING'")
 		end
             else
                 log(:INFO, "Skipping merge")
                 return
-            end 
+            end
         end
 
+        # Pull/rebase the current branch against the upstream stable or validation reference.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [NoRefError] If checking remote ref existence fails with unexpected ref errors
+        # @raise [RunError] If rebasing fails
         def pull(opts)
             remoteRef = opts[:stable] == true ? @remote_ref : @valid_ref
 
@@ -382,10 +442,14 @@ module GitMaintain
                 log(:INFO, "Branch #{remoteRef} does not exists. Skipping...")
                 return
             end
-            @repo.runGitInteractive("rebase #{remoteRef}")
+            runGitInteractive("rebase #{remoteRef}")
 
         end
-        # Push the branch to the validation repo
+        # Push the branch to the validation or stable repository.
+        # Saves the push specs to `opts[:push_branches]` accumulator array.
+        #
+        # @param opts [Hash] Options hash containing configuration and the accumulator array
+        # @raise [GitMaintainError] If CI checks fail or other git/CI errors occur
         def push(opts)
             remoteRef = opts[:stable] == true ? @remote_ref : @valid_ref
 
@@ -412,30 +476,42 @@ module GitMaintain
             end
 
             # For validation/CI push, let's go and push already
-            return "#{@local_branch}:#{@local_branch}" if opts[:stable] != true
+            if opts[:stable] != true
+                opts[:push_branches] ||= []
+                opts[:push_branches] << "#{@local_branch}:#{@local_branch}"
+                return
+            end
 
             # For stable, we need to confirm with the user that he really wants to push
             rep = checkLog(opts, @local_branch, @remote_ref, "submit")
             if rep == "y" then
-                return "#{@local_branch}:#{@remote_branch}"
+                opts[:push_branches] ||= []
+                opts[:push_branches] << "#{@local_branch}:#{@remote_branch}"
             else
                 log(:INFO, "Skipping push to stable")
                 return
             end
         end
 
+        # Run the epilogue for the push action, executing the accumulated pushes.
+        #
+        # @param opts [Hash] Options hash containing configuration and accumulated branch specs in `opts[:push_branches]`
+        # @param branches [Array] Ignored branch list from map send (we use accumulator in `opts[:push_branches]`)
+        # @raise [RunError] If git push execution fails
         def self.push_epilogue(opts, branches)
-            # Compact to remove empty entries
-            branches.compact!()
-
-            return if branches.length == 0
+            push_list = opts[:push_branches] || []
+            return if push_list.length == 0
 
             repo = (opts[:stable] == true) ? opts[:repo].stable_repo : opts[:repo].valid_repo
             opts[:repo].runGit("push #{opts[:push_force] == true ? "-f" : ""} "+
-                               "#{repo} #{branches.join(" ")}")
+                               "#{repo} #{push_list.join(" ")}")
         end
 
-        # Monitor the build status on CI
+        # Monitor the build status on CI for the branch.
+        # Displays the current status (e.g. success, started, errored) and handles prompt to show logs.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If querying CI state or fetching logs fails
         def monitor(opts)
             ts = st = head = nil
             suff=""
@@ -456,7 +532,7 @@ module GitMaintain
                 rep = "y"
                 suff=""
                 while rep == "y"
-                    rep = GitMaintain::confirm(opts, "see the build log#{suff}")
+                    rep = confirm(opts, "see the build log#{suff}")
                     if rep == "y" then
                         log = @ci.getValidLog(self, @head)
                         tmp = `mktemp`.chomp()
@@ -471,7 +547,10 @@ module GitMaintain
             end
         end
 
-        # Reset the branch to the upstream stable one
+        # Reset the branch to the upstream stable reference (warning: hard reset).
+        #
+        # @param opts [Hash] Options hash
+        # @raise [RunError] If running git commands fails
         def reset(opts)
             if same_sha?(@local_branch, @remote_ref) then
                 log(:INFO, "Nothing to reset")
@@ -480,23 +559,35 @@ module GitMaintain
 
             rep = checkLog(opts, @local_branch, @remote_ref, "reset")
             if rep == "y" then
-                @repo.runGit("reset --hard #{@remote_ref}")
+                runGit("reset --hard #{@remote_ref}")
             else
                 log(:INFO, "Skipping reset")
                 return
             end
         end
 
+        # Create a release on the current branch (dummy/unsupported method for the base Branch class).
+        #
+        # @param opts [Hash] Options hash
         def release(opts)
             log(:ERROR,"#No release command available for this repo")
         end
 
+        # Create the missing local branch tracking the upstream remote stable reference.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [RunError] If git branch creation fails
         def create(opts)
             return if @head != ""
             log(:INFO, "Creating missing #{@local_branch} from #{@remote_ref}")
-            @repo.runGit("branch #{@local_branch} #{@remote_ref}")
+            runGit("branch #{@local_branch} #{@remote_ref}")
         end
 
+        # Delete the branch (locally or remotely).
+        # Saves the deletion specs to `opts[:delete_branches]` accumulator array.
+        #
+        # @param opts [Hash] Options hash containing configuration and the accumulator array
+        # @raise [NoRefError] If checking remote ref existence fails with unexpected ref errors
         def delete(opts)
             if opts[:delete_remote] == true then
                 begin
@@ -509,40 +600,49 @@ module GitMaintain
             else
                 msg = "delete branch #{@local_branch}"
             end
-            rep = GitMaintain::confirm(opts, msg)
+            rep = confirm(opts, msg)
             if rep == "y" then
-                return @local_branch
+                opts[:delete_branches] ||= []
+                opts[:delete_branches] << @local_branch
             else
                 log(:INFO, "Skipping deletion")
                 return
             end
         end
-        def self.delete_epilogue(opts, branches)
-            # Compact to remove empty entries
-            branches.compact!()
 
-            return if branches.length == 0
-            puts "Deleting #{opts[:delete_remote] == true ? "remote" : "local"} branches: #{branches.join(" ")}"
-            rep = GitMaintain::confirm(opts, "continue", true)
+        # Run the epilogue for the delete action, executing the accumulated deletions.
+        #
+        # @param opts [Hash] Options hash containing configuration and accumulated branch specs in `opts[:delete_branches]`
+        # @param branches [Array] Ignored branch list from map send (we use accumulator in `opts[:delete_branches]`)
+        # @raise [RunError] If git branch deletion fails
+        def self.delete_epilogue(opts, branches)
+            delete_list = opts[:delete_branches] || []
+            return if delete_list.length == 0
+            puts "Deleting #{opts[:delete_remote] == true ? "remote" : "local"} branches: #{delete_list.join(" ")}"
+            rep = confirm(opts, "continue", true)
             if rep != "y" then
                 log(:INFO, "Cancelling")
                 return
             end
             if opts[:delete_remote] == true then
-                opts[:repo].runGit("push #{opts[:repo].valid_repo} #{branches.map(){|x| ":" + x}.join(" ")}")
+                opts[:repo].runGit("push #{opts[:repo].valid_repo} #{delete_list.map(){|x| ":" + x}.join(" ")}")
             else
-                opts[:repo].runGit("branch -D  #{branches.join(" ")}")
+                opts[:repo].runGit("branch -D  #{delete_list.join(" ")}")
             end
         end
 
         private
+        # Add the given commit to the git notes blacklist for the current branch.
+        #
+        # @param commit [String] The commit SHA to blacklist
+        # @raise [RunError] If running git notes fails
         def add_blacklist(commit)
-  	    @repo.runGit("notes append -m \"#{@local_branch}\" #{commit}")
+  	    runGit("notes append -m \"#{@local_branch}\" #{commit}")
         end
 
         def is_blacklisted?(commit)
             begin
-                @repo.runGit("notes show #{commit} 2> /dev/null").split("\n").each(){|br|
+                runGit("notes show #{commit} 2> /dev/null").split("\n").each(){|br|
                     return true if br == @local_branch
                 }
             rescue
@@ -550,15 +650,21 @@ module GitMaintain
             return false
         end
 
+        # Rewrite the commit message of the HEAD commit to reference the upstream commit.
+        # Adds an "[ Upstream commit <SHA> ]" label.
+        #
+        # @param orig_commit [String] Original upstream commit SHA or reference
+        # @param commit [String] Override commit SHA to display in the label
+        # @raise [RunError] If running git commands fails
         def make_pretty(orig_commit, commit="")
-            orig_sha=@repo.runGit("rev-parse #{orig_commit}")
+            orig_sha=runGit("rev-parse #{orig_commit}")
             msg_commit = (commit.to_s() == "") ? orig_sha : commit
 
             msg_path=`mktemp`.chomp()
             msg_file = File.open(msg_path, "w+")
-	    msg_file.puts @repo.runGit("log -1 --format=\"%s%n%n[ Upstream commit #{msg_commit} ]%n%n%b\" #{orig_commit}")
+	    msg_file.puts runGit("log -1 --format=\"%s%n%n[ Upstream commit #{msg_commit} ]%n%n%b\" #{orig_commit}")
             msg_file.close()
-	    @repo.runGit("commit -s --amend -F #{msg_path}")
+	    runGit("commit -s --amend -F #{msg_path}")
             `rm -f #{msg_path}`
         end
 
@@ -574,7 +680,7 @@ module GitMaintain
 	    end
 
 	    # Hope for the best, same commit is/isn't in the current branch
-	    if @repo.runGit("merge-base #{fullhash} HEAD") == fullhash then
+	    if runGit("merge-base #{fullhash} HEAD") == fullhash then
 		return true
 	    end
 
@@ -583,9 +689,9 @@ module GitMaintain
 	    subj=@repo.getCommitSubj(commit)
 
 	    # Try and find if there's a commit with given subject the hard way
-	    @repo.runGit("log --pretty=\"%H\" -F --grep \"#{subj.gsub("\"", '\\"')}\" "+
+	    runGit("log --pretty=\"%H\" -F --grep \"#{subj.gsub("\"", '\\"')}\" "+
                          "#{@stable_base}..HEAD").split("\n").each(){|cmt|
-                cursubj=@repo.runGit("log -1 --format=\"%s\" #{cmt}")
+                cursubj=runGit("log -1 --format=\"%s\" #{cmt}")
                 if cursubj = subj then
 	            return true
 		end
@@ -595,7 +701,7 @@ module GitMaintain
 
         def is_relevant?(commit)
 	    # Let's grab the commit that this commit fixes (if exists (based on the "Fixes:" tag)).
-	    fixescmt=@repo.runGit("log -1 #{commit} | grep -i \"fixes:\" | head -n 1 | "+
+	    fixescmt=runGit("log -1 #{commit} | grep -i \"fixes:\" | head -n 1 | "+
                                   "sed -e 's/^[ \\t]*//' | cut -f 2 -d ':' | "+
                                   "sed -e 's/^[ \\t]*//' -e 's/\\([0-9a-f]\\+\\)(/\\1 (/' | cut -f 1 -d ' '")
 
@@ -609,22 +715,22 @@ module GitMaintain
                 end
             end
 
-	    if @repo.runGit("show #{commit} | grep -i 'stable@' | wc -l") == "0" then
+	    if runGit("show #{commit} | grep -i 'stable@' | wc -l") == "0" then
 		return false
 	    end
 
 	    # Let's see if there's a version tag in this commit
-	    full=@repo.runGit("show #{commit} | grep -i 'stable@'").gsub(/.* #?/, "")
+	    full=runGit("show #{commit} | grep -i 'stable@'").gsub(/.* #?/, "")
 
 	    # Sanity check our extraction
             if full =~ /stable/ then
                 return false
             end
 
-            full = @repo.runGit("rev-parse #{full}^{commit}")
+            full = runGit("rev-parse #{full}^{commit}")
 
 	    # Make sure our branch contains this version
-	    if @repo.runGit("merge-base #{@head} #{full}") == full then
+	    if runGit("merge-base #{@head} #{full}") == full then
 		return true
 	    end
 
@@ -632,73 +738,67 @@ module GitMaintain
 	    return false
         end
 
+        # Cherry-pick a single commit, trying other stable alternatives if it fails.
+        #
+        # @param commit [String] Commit SHA to cherry-pick
+        # @raise [CherryPickErrorException] If cherry-picking the commit (and its alternatives) fails
         def pick_one(commit)
             cpCmd="cherry-pick --strategy=recursive -Xpatience -x"
-            @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", :check_err => false)
+            runGitInteractive("#{cpCmd} #{commit} &> /dev/null", {}, false)
 	    return if $? == 0
 
-            if @repo.runGit("status -uno --porcelain | wc -l") == "0" then
-		@repo.runGit("reset --hard")
+            if runGit("status -uno --porcelain | wc -l") == "0" then
+		runGit("reset --hard")
                 raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
 	    end
-	    @repo.runGit("reset --hard")
+	    runGit("reset --hard")
 
 	    # That didn't work? Let's try that with every variation of the commit
 	    # in other stable trees.
             @repo.find_alts(commit).each(){|alt_commit|
-		@repo.runGitInteractive("#{cpCmd} #{alt_commit} &> /dev/null", :check_err => false)
+		runGitInteractive("#{cpCmd} #{alt_commit} &> /dev/null", {}, false)
 		if $? == 0 then
 		    return
 		end
-		@repo.runGit("reset --hard")
+		runGit("reset --hard")
             }
 
 	    # Still no? Let's go back to the original commit and hand it off to
 	    # the user.
-	    @repo.runGitInteractive("#{cpCmd} #{commit} &> /dev/null", :check_err => false)
+	    runGitInteractive("#{cpCmd} #{commit} &> /dev/null", {}, false)
             raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
         end
 
-        def confirm_one(opts, commit)
- 	    rep=""
-	    do_cp=false
-	    puts @repo.getCommitHeadline(commit)
-	    while rep != "y" do
-		puts "Do you want to steal this commit ? (y/n/b/?)"
-                case opts[:yn_default]
-                when :no
-                    log(:INFO, "Auto-replying no due to --no option")
-                    rep = 'n'
-                    break
-                when :yes
-                    log(:INFO, "Auto-replying yes due to --yes option")
-                    rep = 'y'
-                else
-                    rep = STDIN.gets.chomp()
-                end
-
-		case rep
-		when "n"
-		    log(:INFO, "Skip this commit")
-		    break
-		when "b"
-		    log(:INFO, "Blacklisting this commit for the current branch")
-		    add_blacklist(commit)
-		    break
-		when "y"
-		    rep="y"
-		    do_cp=true
-		    break
-		when "?"
-		    puts @repo.runGit("show #{commit}")
-                else
-		    log(:ERROR, "Invalid answer $rep")
-		    puts @repo.runGit("show --format=oneline --no-patch --no-decorate #{commit}")
-                end
-	    end
-            return do_cp
+        # Handle user interaction to fix cherry-pick conflicts via an interactive shell.
+        #
+        # @param opts [Hash] Options hash
+        # @param commit [String] Commit SHA with conflicts
+        # @raise [CPAbort] If cherry-pick is aborted by the user
+        # @raise [CPSkip] If the user skips this commit
+        def cp_fix(opts, commit)
+            runGitInteractive("diff")
+            log( :INFO, "Entering subshell to fix conflicts. Exit when done")
+            runSystem("PS1_WARNING='CP FIX' bash", false)
+            rep = confirm(opts, "continue with scp [y(es), n(o), s(kip)]?", true, ["y", "n", "s"])
+            case rep
+            when "n"
+                runGitInteractive("cherry-pick --abort")
+                raise(CPAbort)
+            when "s"
+                runGitInteractive("cherry-pick --abort")
+                e = CPSkip.new(commit.to_s())
+                log(:INFO, e.to_s())
+                raise(e)
+            end
         end
 
+        # Steal/cherry-pick a single commit from upstream, asking for confirmation if needed.
+        #
+        # @param opts [Hash] Options hash
+        # @param commit [String] Commit SHA to cherry-pick
+        # @param mainline [Boolean] Whether to treat this as a mainline cherry-pick (skips mapping checks)
+        # @raise [CPSkip] If the user chooses to skip this commit
+        # @raise [CPAbort] If the user chooses to abort cherry-picking
         def steal_one(opts, commit, mainline=false)
 	    msg=''
             orig_cmt=commit
@@ -708,7 +808,7 @@ module GitMaintain
                 subj.gsub!(/"/, '\"')
 		# Let's grab the mainline commit id, this is useful if the version tag
 		# doesn't exist in the commit we're looking at but exists upstream.
-		orig_cmt=@repo.runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
+		orig_cmt=runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
                                       "#{@stable_base}..origin/master | tail -n1")
 
                 if orig_cmt == "" then
@@ -717,14 +817,14 @@ module GitMaintain
             end
             # If the commit doesn't apply for us, skip it
 	    if is_relevant?(orig_cmt) != true
-                return true
+                return
 	    end
 
             log(:VERBOSE, "Found relevant commit #{@repo.getCommitHeadline(commit)}")
 	    if is_in_tree?(orig_cmt) == true
 		# Commit is already in the stable branch, skip
                 log(:VERBOSE, "Commit is already in tree")
-                return true
+                return
 	    end
 
 	    # Check if it's not blacklisted by a git-notes
@@ -732,41 +832,75 @@ module GitMaintain
 		# Commit is blacklisted
 		log(:INFO, "Skipping 'blacklisted' commit " +
                            @repo.getCommitHeadline(orig_cmt))
-                return true
+                return
 	    end
 
-            do_cp = confirm_one(opts, orig_cmt)
-            return false if do_cp != true
+	    commit_desc = @repo.getCommitHeadline(commit)
+            rep = "t"
+            while rep != "y"
+                rep = confirm(opts, "pick commit '#{commit_desc}' up ([y]es, [n]o, [b]lacklist)",
+                              false, ["y", "n", "?", "b"])
 
-            prev_head=@repo.runGit("rev-parse HEAD")
+                case rep
+                when "y"
+                    break
+                when "n"
+                    raise CPSkip.new(commit)
+                when "b"
+		    log(:INFO, "Blacklisting this commit for the current branch")
+		    add_blacklist(commit)
+		    raise CPSkip.new(commit)
+                when "?"
+                    runGitInteractive("show #{commit}", {}, false)
+                end
+            end
 
+            prev_head=runGit("rev-parse HEAD")
             begin
 		pick_one(commit)
-            rescue CherryPickErrorException => e
-		log(:WARNING, "Cherry pick failed. Fix, commit (or reset) and exit.")
-		@repo.runBash("PS1_WARNING='CP FIX'")
+            rescue CherryPickErrorException
+                cp_fix(opts, commit)
             end
-            new_head=@repo.runGit("rev-parse HEAD")
+            new_head=runGit("rev-parse HEAD")
 
 	    # If we didn't find the commit upstream then this must be a custom commit
 	    # in the given tree - make sure the user checks this commit.
 	    if orig_cmt == "" then
 		msg="Custom"
-		orig_cmt=@repo.runGit("rev-parse HEAD")
+		orig_cmt=runGit("rev-parse HEAD")
 		log(:WARNING, "Custom commit, please double-check!")
-		@repo.runBash("PS1_WARNING='CHECK'")
+		runBash("PS1_WARNING='CHECK'")
 	    end
             if new_head != prev_head
 		make_pretty(orig_cmt, msg)
             end
+            return
         end
 
+        # Steal/cherry-pick all upstream commits in the given revision range.
+        #
+        # @param opts [Hash] Options hash
+        # @param range [String] Git revision range (e.g., 'base..HEAD')
+        # @param mainline [Boolean] Whether to treat commits as mainline cherry-picks
+        # @raise [CPSkip] If any cherry-pick of a patch is skipped by the user
+        # @raise [CPAbort] If cherry-pick is aborted by the user
         def steal_all(opts, range, mainline = false)
-            res = true
- 	    @repo.runGit("log --no-merges --format=\"%H\" #{range} | tac").split("\n").each(){|commit|
-                res &= steal_one(opts, commit, mainline)
+            skipped = []
+ 	    runGit("log --no-merges --format=\"%H\" #{range} | tac").split("\n").each(){|commit|
+                begin
+                    steal_one(opts, commit, mainline)
+                rescue CPSkip => e
+                    log(:INFO, e.message)
+                    skipped << commit
+                rescue CPAbort => e
+                    log(:INFO, "Cherry-pick aborted by user.")
+                    raise e
+                end
             }
-            return res
+            if skipped.length > 0
+                raise CPSkip.new(skipped.join(" "))
+            end
+            return
         end
 
         def same_sha?(ref1, ref2)
@@ -780,11 +914,19 @@ module GitMaintain
         end
 
 
+        # Add files and commit them to the release branch.
+        #
+        # @param opts [Hash] Options hash
+        # @param filelist [Array<String>] List of file paths to add
+        # @param commit_path [String, nil] Path to a file containing the commit message
+        # @param commit_msg [String, nil] Direct commit message text
+        # @raise [MissingArgumentError] If both commit_msg and commit_path are nil
+        # @raise [GitMaintainError] If the git commit fails
         def release_do_add_commit(opts, filelist, commit_path, commit_msg=nil)
             edit_flag = ""
             edit_flag = "--edit" if opts[:no_edit] == false
 
-            raise("No commit message provided") if commit_path == nil && commit_msg == nil
+            raise MissingArgumentError.new("commit message/path") if commit_path == nil && commit_msg == nil
             commit_flag=""
             if commit_msg != nil
                 commit_flag = "-m '#{commit_msg}'"
@@ -794,32 +936,50 @@ module GitMaintain
 
             # Add and commit
             begin
-                @repo.runGit("add  " + filelist.join(" "))
-                @repo.runGitInteractive("commit #{commit_flag} --verbose #{edit_flag} --signoff")
-            rescue RuntimeError
-                raise("Failed to commit on branch #{@local_branch}")
+                runGit("add  " + filelist.join(" "))
+                runGitInteractive("commit #{commit_flag} --verbose #{edit_flag} --signoff")
+            rescue RunError
+                raise GitMaintainError.new("Failed to commit on branch #{@local_branch}")
             end
-            return 0
         end
 
+        # Create a signed annotated release tag.
+        #
+        # @param opts [Hash] Options hash
+        # @param version [String] The version string/tag name
+        # @param tag_path [String] Path to file containing the tag message
+        # @raise [GitMaintainError] If tagging fails
         def release_do_tag(opts, version, tag_path)
             edit_flag = ""
             edit_flag = "--edit" if opts[:no_edit] == false
             begin
-                @repo.runGitInteractive("tag -a -s #{version} #{edit_flag} -F #{tag_path}")
-            rescue RuntimeError
-                raise("Failed to tag branch #{@local_branch}")
+                runGitInteractive("tag -a -s #{version} #{edit_flag} -F #{tag_path}")
+            rescue RunError
+                raise GitMaintainError.new("Failed to tag branch #{@local_branch}")
             end
-            return 0
         end
 
+        # Add, commit, and tag files for a release.
+        #
+        # @param opts [Hash] Options hash
+        # @param filelist [Array<String>] List of file paths to add and commit
+        # @param version [String] The version string/tag name
+        # @param message_path [String] Path to file containing the commit/tag message
+        # @raise [GitMaintainError] If committing or tagging fails
         def release_do_add_commit_tag(opts, filelist, version, message_path)
             release_do_add_commit(opts, filelist, message_path)
             release_do_tag(opts, version, message_path)
-           return 0
         end
 
         protected
+        # Print the diff between two branches and prompt for confirmation.
+        #
+        # @param opts [Hash] Options hash
+        # @param br1 [String] First branch/ref
+        # @param br2 [String] Second branch/ref
+        # @param action_msg [String] Action message to prompt (e.g. 'submit')
+        # @return [String] User prompt response ('y' or 'n')
+        # @raise [RunError] If running git log fails
         def checkLog(opts, br1, br2, action_msg)
             puts "Diff between #{br1} and #{br2}"
             puts `git log --format=oneline #{br1} ^#{br2}`
@@ -828,10 +988,15 @@ module GitMaintain
             return rep
         end
 
+        # Print the diff/log between two branches.
+        #
+        # @param opts [Hash] Options hash
+        # @param br1 [String] First branch/ref
+        # @param br2 [String] Second branch/ref
+        # @raise [RunError] If running git log fails
         def showLog(opts, br1, br2)
             log(:INFO, "Diff between #{br1} and #{br2}")
             puts `git log --format=oneline #{br1} ^#{br2}`
-            return "n"
         end
     end
 end

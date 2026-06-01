@@ -1,12 +1,24 @@
+# Module containing addon classes for rdma-core repository.
 module GitMaintain
+
+    # Subclass of Branch customized for the rdma-core repository.
     class RDMACoreBranch < Branch
+        # The name of this repository.
         REPO_NAME = "rdma-core"
+        # Minimum version number supported by Azure CI.
         AZURE_MIN_VERSION = 18
+        # Addon action list for rdma-core branch.
         ACTION_LIST = Branch::ACTION_LIST + [ :validate ]
+        # Help descriptions of addon actions for CLI.
         ACTION_HELP = {
             :validate => "Validate that branch still builds"
         }.merge(Branch::ACTION_HELP)
 
+        # Configure release-specific command line options.
+        #
+        # @param action [Symbol] Selected action name
+        # @param optsParser [OptionParser] The OptionParser instance
+        # @param opts [Hash] The options hash to populate
         def self.set_opts(action, optsParser, opts)
             opts[:rel_type] = nil
 
@@ -16,13 +28,18 @@ module GitMaintain
                      opts[:rel_type] = :major }
                  optsParser.on("--stable", "Release a stable version.") {
                      opts[:rel_type] = :stable }
-           end
+            end
         end
+
+        # Validate release-specific command line options.
+        #
+        # @param opts [Hash] Options hash to validate
+        # @raise [GitMaintainError] If rel_type is not specified
         def self.check_opts(opts)
             if opts[:action] == :release then
                 case opts[:rel_type]
                 when nil
-                    raise "No release type specified use --stable or --major"
+                    raise GitMaintainError.new("No release type specified use --stable or --major")
                 when :major
                     if opts[:manual_branch] == nil then
                         GitMaintain::log(:INFO, "Major release selected. Auto-forcing branch to master")
@@ -31,6 +48,12 @@ module GitMaintain
                 end
             end
         end
+
+        # Create a new release for rdma-core.
+        # Updates spec files, CMakeLists, changelog, commits, and tags the release.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If prepping, committing, or tagging fails
         def release(opts)
             prev_ver=@repo.runGit("show HEAD:CMakeLists.txt  | grep -E \"[sS][eE][tT]\\\\(PACKAGE_VERSION\"").
                          chomp().gsub(/[sS][eE][tT]\(PACKAGE_VERSION\s*"([0-9.]*)".*$/, '\1')
@@ -76,9 +99,6 @@ module GitMaintain
             tag_file.puts `git log HEAD ^#{git_prev_ver} --no-merges --format='   * %s'`
             tag_file.close()
 
-            edit_flag = ""
-            edit_flag = "--edit" if opts[:no_edit] == false
-
             if opts[:rel_type] == :major
                 # For major, tag the current version first
                 release_do_tag(opts, "v" + rel_ver, tag_path)
@@ -112,23 +132,37 @@ mv debian/changelog.new debian/changelog")
                 release_do_tag(opts, "v" + rel_ver, tag_path)
             end
             `rm -f #{tag_path}`
-            return 0
         end
+
+        # Validate that the branch compiles successfully by building it.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If building the branch fails
         def validate(opts)
             begin
                 @repo.runSystem("rm -Rf build/ && mkdir build/ && cd build/ && cmake .. && make -j")
-            rescue RuntimeError
-                raise("Validation failure")
+            rescue RunError
+                raise GitMaintainError.new("Validation failure")
             end
         end
     end
+    # Repo class customized for the rdma-core repository.
     class RDMACoreRepo < Repo
+        # Minimum version number supported by Azure CI.
         AZURE_MIN_VERSION = 18
+        # Addon action list for rdma-core repo.
         ACTION_LIST = Repo::ACTION_LIST + [ :create_stable ]
+        # Help descriptions of addon actions for CLI.
         ACTION_HELP = {
             :create_stable => "Create a stable branch from a release tag"
         }.merge(Repo::ACTION_HELP)
 
+        # Submit release tags, conditionally creating GitHub releases depending on the version.
+        # Starting from v27, the GitHub release is created automatically by Azure pipelines.
+        #
+        # @param opts [Hash] Options hash
+        # @param new_tags [Array<String>] List of release tags to submit
+        # @raise [GitMaintainError] If release submission fails
         def submitReleases(opts, new_tags)
             new_tags.each(){|tag|
                 next if tag !~ /v([0-9]*)\.[0-9]*/
@@ -138,6 +172,11 @@ mv debian/changelog.new debian/changelog")
             }
         end
 
+        # Configure options for the create_stable action.
+        #
+        # @param action [Symbol] Action name
+        # @param optsParser [OptionParser] The OptionParser instance
+        # @param opts [Hash] The options hash to populate
         def self.set_opts(action, optsParser, opts)
             case action
             when :create_stable then
@@ -149,22 +188,34 @@ mv debian/changelog.new debian/changelog")
                 |val| opts[:skip_docker] = true}
             end
         end
+
+        # Validate options for repo actions.
+        #
+        # @param opts [Hash] Options hash to validate
+        # @raise [MissingArgumentError] If create_stable is called without a version
+        # @raise [GitMaintainError] If create_stable is called on a non-master suffixed branch
         def self.check_opts(opts)
             case opts[:action]
                 when :create_stable
                 if opts[:version].to_s() == "" then
-                    raise "Action #{opts[:action]} requires a branch number to be specified"
+                    raise MissingArgumentError.new("branch number")
                 end
-                 if opts[:br_suff] != "master" then
-                    raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
+                if opts[:br_suff] != "master" then
+                    raise GitMaintainError.new("Action #{opts[:action]} can only be done on 'master' suffixed branches")
                 end
-           end
+            end
         end
+
+        # Create a stable branch from a release tag.
+        # Runs the setup commands documented in Documentation/stable.md.
+        #
+        # @param opts [Hash] Options hash
+        # @raise [GitMaintainError] If running stable creation commands fails
         def create_stable(opts)
             ver = opts[:version].to_s()
             suff = opts[:br_suff]
             if getBranchList(suff).index(ver) != nil then
-                raise("Local branch already exists for version #{ver}")
+                raise GitMaintainError.new("Local branch already exists for version #{ver}")
             end
             br = versionToLocalBranch(ver, suff)
             full_ver = ver.gsub(/([0-9]+)/, @stable_base_format)
@@ -179,14 +230,21 @@ mv debian/changelog.new debian/changelog")
             toDo=cmdList.join("&&")
             begin
                 runSystem(toDo)
-            rescue RuntimeError
-                raise("Fail to run stable creation code")
+            rescue RunError
+                raise GitMaintainError.new("Fail to run stable creation code")
             end
         end
     end
 
+    # CI interface subclass customized to route CI queries for rdma-core.
+    # Uses Travis for older versions (< 18) and Azure DevOps for newer versions.
     class RDMACoreCI < CI
+        # Minimum version number supported by Azure CI.
         AZURE_MIN_VERSION = 18
+
+        # Initialize RDMACoreCI, setting up both Travis and Azure DevOps adapters.
+        #
+        # @param repo [Repo] The Repo instance
         def initialize(repo)
             super(repo)
             @travis = GitMaintain::TravisCI.new(repo)
@@ -202,10 +260,10 @@ mv debian/changelog.new debian/changelog")
                 self.define_singleton_method(method) { |br, *args|
                     if br.version =~ /([0-9]+)/
                         major=$1.to_i
-                    elsif br.version == "master" 
+                    elsif br.version == "master"
                         major=99999
                     else
-                        raise("Unable to monitor branch #{br} on a CI")
+                        raise GitMaintainError.new("Unable to monitor branch #{br} on a CI")
                     end
                     if major < AZURE_MIN_VERSION
                         @travis.send(method, br, *args)
@@ -215,6 +273,7 @@ mv debian/changelog.new debian/changelog")
                 }
             }
         end
+        # Clear any cached build state for both Travis and Azure adapters.
         def emptyCache()
             @travis.emptyCache()
             @azure.emptyCache()

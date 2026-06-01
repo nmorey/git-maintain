@@ -1,16 +1,20 @@
 require 'cli_class_tool'
 
-GIT_MAINTAIN_LIB_DIR = File.expand_path('..', __dir__) unless defined?(GIT_MAINTAIN_LIB_DIR)
-
+# Main module for git-maintain repository maintenance tool.
 module GitMaintain
     extend CLIClassTool::Utils
 
+    # Base class for git-maintain components providing generic logging and CLI utility helpers.
     class Common < CLIClassTool::Common
         public :log
 
+        # Log an error message and raise a GitMaintainError.
+        #
+        # @param msg [String] Error message
+        # @raise [GitMaintainError] Always raised with the given message
         def crit(msg)
             log(:ERROR, msg)
-            raise msg
+            raise GitMaintainError.new(msg)
         end
 
     end
@@ -22,18 +26,33 @@ require_relative 'azure'
 require_relative 'repo'
 require_relative 'branch'
 
+# Re-open the module to declare registry functions and load addons.
 module GitMaintain
+    # Action classes supported by git-maintain CLI.
     ACTION_CLASS = [ Common, Branch, Repo ]
+    # Internal registry for custom repo-specific adapters.
     @@custom_classes = {}
+    # Internal helper instance for package-level logging.
     @helper = Common.new
 
+    # Register custom classes (Repo, Branch, CI) for a specific repository name.
+    #
+    # @param repo_name [String] Name of the repository (e.g. 'rdma-core')
+    # @param classes [Hash] Hash mapping default classes (e.g. Repo) to custom subclasses (e.g. RDMACoreRepo)
+    # @raise [GitMaintainError] If custom classes are already registered for this repository
     def registerCustom(repo_name, classes)
-        raise("Multiple class for repo #{repo_name}") if @@custom_classes[repo_name] != nil
+        raise GitMaintainError.new("Multiple class for repo #{repo_name}") if @@custom_classes[repo_name] != nil
         classes[:name] = repo_name if classes[:name] == nil
         @@custom_classes[repo_name] = classes
     end
     module_function :registerCustom
 
+    # Retrieve the registered custom subclass for a given default class and repository name.
+    # Returns the default_class if no custom class is registered.
+    #
+    # @param default_class [Class] Default class to resolve (e.g. Repo)
+    # @param repo_name [String] Repository name to search for
+    # @return [Class] The resolved class (either the custom subclass or the default_class)
     def getExtendedClass(default_class, repo_name = File.basename(Dir.pwd()))
         custom = @@custom_classes[repo_name]
         if custom != nil && custom[default_class] != nil then
@@ -44,16 +63,26 @@ module GitMaintain
     end
     module_function :getExtendedClass
 
+    # Retrieve all registered custom classes.
+    #
+    # @return [Hash] Registry of custom classes
     def getCustomClasses()
         return @@custom_classes
     end
     module_function :getCustomClasses
 
+    # Log a message at the package level using the internal helper.
+    #
+    # @param lvl [Symbol] Log level (e.g. :INFO, :WARNING, :ERROR)
+    # @param str [String] Message string
     def log(lvl, str)
         @helper.log(lvl, str)
     end
     module_function :log
 
+    # Set whether verbose log is enabled.
+    #
+    # @param val [Boolean] True to enable verbose logs
     def setVerbose(val)
         self.verbose_log = val
     end
