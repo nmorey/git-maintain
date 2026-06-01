@@ -17,7 +17,7 @@ module GitMaintain
             changes=@repo.runGit("show HEAD:CHANGELOG |  awk ' BEGIN {count=0} {if ($1 == \"------------------\") count++; if (count == 0) print $0}'")
 
             puts "Preparing release #{prev_ver} => #{new_ver}"
-            rep = GitMaintain::checkLog(opts, @local_branch, git_prev_ver, "release")
+            rep = checkLog(opts, @local_branch, git_prev_ver, "release")
             if rep != "y" then
                 puts "Skipping release"
                 return

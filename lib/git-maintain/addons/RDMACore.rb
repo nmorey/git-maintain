@@ -57,7 +57,7 @@ module GitMaintain
             end
 
             puts "Preparing #{opts[:rel_type].to_s} release #{prev_ver} => #{rel_ver}"
-            rep = GitMaintain::checkLog(opts, @local_branch, git_prev_ver, "release")
+            rep = checkLog(opts, @local_branch, git_prev_ver, "release")
             if rep != "y" then
                 puts "Skipping release"
                 return

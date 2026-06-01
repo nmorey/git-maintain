@@ -332,10 +332,10 @@ module GitMaintain
             GitMaintain::log(:INFO, "Working on #{@verbose_name}")
             if opts[:stable] == true then
                 # List commits in the stable_branch that are no in the latest release
-                GitMaintain::showLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"))
+                showLog(opts, @remote_ref, @repo.runGit("describe --abbrev=0 #{@local_branch}"))
             else
                 # List commits in the branch that are no in the stable branch
-                GitMaintain::showLog(opts, @local_branch, @remote_ref)
+                showLog(opts, @local_branch, @remote_ref)
             end
         end
 
@@ -358,7 +358,7 @@ module GitMaintain
                 return
             end
 
-            rep = GitMaintain::checkLog(opts, merge_branch, @local_branch, "merge")
+            rep = checkLog(opts, merge_branch, @local_branch, "merge")
             if rep == "y" then
                 begin
                     @repo.runGitInteractive("merge #{merge_branch}")
@@ -407,7 +407,7 @@ module GitMaintain
             end
 
             if opts[:check_only] == true then
-                GitMaintain::checkLog(opts, @local_branch, @remote_ref, "")
+                checkLog(opts, @local_branch, @remote_ref, "")
                 return
             end
 
@@ -415,7 +415,7 @@ module GitMaintain
             return "#{@local_branch}:#{@local_branch}" if opts[:stable] != true
 
             # For stable, we need to confirm with the user that he really wants to push
-            rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "submit")
+            rep = checkLog(opts, @local_branch, @remote_ref, "submit")
             if rep == "y" then
                 return "#{@local_branch}:#{@remote_branch}"
             else
@@ -478,7 +478,7 @@ module GitMaintain
                 return
             end
 
-            rep = GitMaintain::checkLog(opts, @local_branch, @remote_ref, "reset")
+            rep = checkLog(opts, @local_branch, @remote_ref, "reset")
             if rep == "y" then
                 @repo.runGit("reset --hard #{@remote_ref}")
             else
