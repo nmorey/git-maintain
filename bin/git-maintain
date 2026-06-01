@@ -4,9 +4,9 @@ require 'optparse'
 require 'net/http'
 require 'json'
 
-BACKPORT_LIB_DIR = File.dirname(__FILE__) + '/../lib'
-$LOAD_PATH.push(BACKPORT_LIB_DIR)
-require 'common'
+GIT_MAINTAIN_LIB_DIR = File.expand_path('../lib', __dir__)
+$LOAD_PATH.push(GIT_MAINTAIN_LIB_DIR)
+require 'git-maintain'
 $LOAD_PATH.pop()
 
 opts = {

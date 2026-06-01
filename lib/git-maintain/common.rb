@@ -1,13 +1,11 @@
-$LOAD_PATH.push(BACKPORT_LIB_DIR)
+require_relative 'string'
+require_relative 'ci'
+require_relative 'travis'
+require_relative 'azure'
+require_relative 'repo'
+require_relative 'branch'
 
-require 'string'
-require 'ci'
-require 'travis'
-require 'azure'
-require 'repo'
-require 'branch'
-
-$LOAD_PATH.pop()
+GIT_MAINTAIN_LIB_DIR = File.expand_path('..', __dir__) unless defined?(GIT_MAINTAIN_LIB_DIR)
 
 module GitMaintain
     class Common
@@ -202,13 +200,13 @@ module GitMaintain
     end
     module_function :setVerbose
 end
-$LOAD_PATH.pop()
 
 
 # Load all custom classes
-$LOAD_PATH.push(BACKPORT_LIB_DIR + "/addons/")
-Dir.entries(BACKPORT_LIB_DIR + "/addons/").each(){|entry|
-    next if (!File.file?(BACKPORT_LIB_DIR + "/addons/" + entry) || entry !~ /\.rb$/ );
+ADDONS_DIR = File.expand_path('addons', __dir__)
+$LOAD_PATH.push(ADDONS_DIR)
+Dir.entries(ADDONS_DIR).each(){|entry|
+    next if (!File.file?(File.join(ADDONS_DIR, entry)) || entry !~ /\.rb$/ );
     require entry.sub(/.rb$/, "")
 }
 $LOAD_PATH.pop()

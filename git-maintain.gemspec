@@ -12,10 +12,8 @@ Gem::Specification.new do |s|
     "LICENSE",
     "CHANGELOG",
     "README.md",
-    "lib/addons/RDMACore.rb",
-    "lib/addons/git-maintain.rb",
     "git-maintain-completion.sh"
-  ] + Dir['lib/*.rb'].keep_if { |file| File.file?(file) }
+  ] + Dir['lib/**/*.rb'].keep_if { |file| File.file?(file) }
   s.homepage    =
     'https://github.com/nmorey/git-maintain'
   s.license       = 'GPL-3.0'
