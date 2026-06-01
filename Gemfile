@@ -5,6 +5,10 @@ source "https://rubygems.org"
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
 gem 'cli_class_tool'
+gem 'rake'
+gem 'minitest'
+gem 'base64'
+gem 'faraday-retry'
 
 if (RUBY_VERSION < '2.7.0')
     gem 'octokit', '>= 3.0', '< 5'

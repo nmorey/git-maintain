@@ -1,4 +1,18 @@
-*~
+# Ignore built gem files
 *.gem
+
+# Ignore bundler config and installed gems
 .bundle/
+vendor/bundle/
+
+# Ignore YARD documentation artifacts
+.yardoc/
+doc/
+
+# Ignore coverage and test artifacts
+coverage/
+tmp/
+
+# Ignore lockfiles and packages
 Gemfile.lock
+pkg/
