@@ -8,7 +8,7 @@ module GitMaintain
         attr_reader :commit
     end
 
-    class Branch
+    class Branch < Common
         ACTION_LIST = [
             :cp, :steal, :list,
             :merge, :pull, :push, :monitor,
@@ -147,7 +147,7 @@ module GitMaintain
             ci = CI::load(repo)
             opts[:repo] = repo
             opts[:ci] = ci
-            brClass = GitMaintain::getClass(self, repo.name)
+            brClass = GitMaintain::getExtendedClass(self, repo.name)
 
             if NO_FETCH_ACTIONS.index(action) == nil && opts[:fetch] != false then
                 GitMaintain::log(:INFO, "Fetching stable repo")
@@ -245,9 +245,7 @@ module GitMaintain
         attr_reader :version, :local_branch, :head, :remote_branch, :valid_ref, :remote_ref, :stable_head,
                     :verbose_name, :exists, :stable_base
 
-        def log(lvl, str)
-            GitMaintain::log(lvl, str)
-        end
+
 
         def is_targetted?(opts)
             return true if @branch_type == :user_specified
@@ -821,5 +819,19 @@ module GitMaintain
            return 0
         end
 
+        protected
+        def checkLog(opts, br1, br2, action_msg)
+            puts "Diff between #{br1} and #{br2}"
+            puts `git log --format=oneline #{br1} ^#{br2}`
+            return "n" if action_msg.to_s() == ""
+            rep = confirm(opts, "#{action_msg} this branch")
+            return rep
+        end
+
+        def showLog(opts, br1, br2)
+            log(:INFO, "Diff between #{br1} and #{br2}")
+            puts `git log --format=oneline #{br1} ^#{br2}`
+            return "n"
+        end
     end
 end

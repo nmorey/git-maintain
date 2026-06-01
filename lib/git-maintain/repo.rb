@@ -7,7 +7,7 @@ module GitMaintain
             super("Reference '#{ref}' was not found")
         end
     end
-    class Repo
+    class Repo < Common
         @@VALID_REPO = "github"
         @@STABLE_REPO = "stable"
         @@SUBMIT_BINARY="git-release"
@@ -35,15 +35,6 @@ module GitMaintain
                     raise "Action #{opts[:action]} can only be done on 'master' suffixed branches"
                 end
             end
-        end
-
-        def self.execAction(opts, action)
-            repo   = Repo::load()
-
-            if action == :submit_release then
-                repo.stableUpdate()
-            end
-            repo.send(action, opts)
         end
 
         def initialize(path=nil)
@@ -111,9 +102,7 @@ module GitMaintain
         end
         attr_reader :path, :name, :remote_valid, :remote_stable, :valid_repo, :stable_repo
 
-        def log(lvl, str)
-            GitMaintain::log(lvl, str)
-        end
+
 
         def _run_check_ret(ret, opts)
             raise(RuntimeError.new(ret)) if $?.exitstatus != 0 && opts.fetch(:check_err, true) == true

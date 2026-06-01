@@ -1,25 +1,31 @@
-require_relative 'string'
+require 'cli_class_tool'
+
+GIT_MAINTAIN_LIB_DIR = File.expand_path('..', __dir__) unless defined?(GIT_MAINTAIN_LIB_DIR)
+
+module GitMaintain
+    extend CLIClassTool::Utils
+
+    class Common < CLIClassTool::Common
+        public :log
+
+        def crit(msg)
+            log(:ERROR, msg)
+            raise msg
+        end
+
+    end
+end
+
 require_relative 'ci'
 require_relative 'travis'
 require_relative 'azure'
 require_relative 'repo'
 require_relative 'branch'
 
-GIT_MAINTAIN_LIB_DIR = File.expand_path('..', __dir__) unless defined?(GIT_MAINTAIN_LIB_DIR)
-
 module GitMaintain
-    class Common
-        ACTION_LIST = [ :list_actions ]
-        ACTION_HELP = {}
-        def self.execAction(opts, action)
-            puts GitMaintain::getActionAttr("ACTION_LIST").join("\n")
-        end
-    end
-
     ACTION_CLASS = [ Common, Branch, Repo ]
     @@custom_classes = {}
-    @@load_class = []
-    @@verbose_log = false
+    @helper = Common.new
 
     def registerCustom(repo_name, classes)
         raise("Multiple class for repo #{repo_name}") if @@custom_classes[repo_name] != nil
@@ -28,198 +34,37 @@ module GitMaintain
     end
     module_function :registerCustom
 
-    def getClass(default_class, repo_name = File.basename(Dir.pwd()))
+    def getExtendedClass(default_class, repo_name = File.basename(Dir.pwd()))
         custom = @@custom_classes[repo_name]
         if custom != nil && custom[default_class] != nil then
-            log(:DEBUG,"Detected custom #{default_class} class for repo '#{repo_name}'")
             return custom[default_class]
         else
-            log(:DEBUG,"Detected NO custom #{default_class} classes for repo '#{repo_name}'")
             return default_class
         end
     end
-    module_function :getClass
+    module_function :getExtendedClass
 
     def getCustomClasses()
         return @@custom_classes
     end
     module_function :getCustomClasses
 
-    def loadClass(default_class, repo_name, *more)
-        @@load_class.push(default_class)
-        obj = GitMaintain::getClass(default_class, repo_name).new(*more)
-        @@load_class.pop()
-        return obj
-    end
-    module_function :loadClass
-
-    # Check that the constructor was called through loadClass
-    def checkDirectConstructor(theClass)
-        curLoad= @@load_class.last()
-        cl = theClass
-        while cl != Object
-            return if cl == curLoad
-            cl = cl.superclass
-        end
-        raise("Use GitMaintain::loadClass to construct a #{theClass} class")
-    end
-    module_function :checkDirectConstructor
-
-    def getActionAttr(attr)
-        if Common.const_get(attr).class == Hash
-            return ACTION_CLASS.inject({}){|h, x| h.merge(getClass(x).const_get(attr))}
-        else
-            return ACTION_CLASS.map(){|x| getClass(x).const_get(attr)}.flatten()
-        end
-    end
-    module_function :getActionAttr
-
-    def setOpts(action, optsParser, opts)
-         ACTION_CLASS.each(){|x|
-            if x::ACTION_LIST.index(action) != nil &&
-               x.singleton_methods().index(:set_opts) != nil then
-                matched=true
-                x.set_opts(action, optsParser, opts)
-            end
-            # Try to add repo specific opts
-            y = getClass(x)
-            if x != y && y::ACTION_LIST.index(action) != nil &&
-               y.singleton_methods().index(:set_opts) != nil then
-                matched=true
-                x.set_opts(action, optsParser, opts) if x.singleton_methods().index(:set_opts) != nil
-                y.set_opts(action, optsParser, opts)
-            end
-            break if matched == true
-        }
-    end
-    module_function :setOpts
-
-    def checkOpts(opts)
-        ACTION_CLASS.each(){|x|
-            if x::ACTION_LIST.index(opts[:action]) != nil &&
-               x.singleton_methods().index(:check_opts) != nil then
-                matched=true
-                x.check_opts(opts)
-            end
-
-            # Try to add repo specific opts
-            y = getClass(x)
-            if x != y && y::ACTION_LIST.index(opts[:action]) != nil &&
-               y.singleton_methods().index(:check_opts) != nil then
-                matched=true
-                x.check_opts(opts) if x.singleton_methods().index(:check_opts) != nil
-                y.check_opts(opts)
-            end
-            break if matched == true
-       }
-    end
-    module_function :checkOpts
-
-    def execAction(opts, action)
-        ACTION_CLASS.each(){|x|
-            if x::ACTION_LIST.index(action) != nil
-                return x.execAction(opts, action)
-            end
-           # Try to add repo specific opts
-            y = getClass(x)
-            if x != y && y::ACTION_LIST.index(opts[:action]) != nil then
-                return y.execAction(opts, action)
-            end
-        }
-    end
-    module_function :execAction
-
-    def confirm(opts, msg, ignore_default=false)
-        rep = 't'
-        while rep != "y" && rep != "n" && rep != '' do
-            puts "Do you wish to #{msg} ? (y/N): "
-            case (ignore_default == true ? nil : opts[:yn_default])
-            when :no
-                puts "Auto-replying no due to --no option"
-                rep = 'n'
-            when :yes
-                puts "Auto-replying yes due to --yes option"
-                rep = 'y'
-            else
-                rep = STDIN.gets.chomp()
-            end
-        end
-        return rep
-    end
-    module_function :confirm
-
-    def checkLog(opts, br1, br2, action_msg)
-        puts "Diff between #{br1} and #{br2}"
-        puts `git log --format=oneline #{br1} ^#{br2}`
-        return "n" if action_msg.to_s() == ""
-        rep = confirm(opts, "#{action_msg} this branch")
-        return rep
-    end
-    module_function :checkLog
-
-    def showLog(opts, br1, br2)
-        log(:INFO, "Diff between #{br1} and #{br2}")
-        puts `git log --format=oneline #{br1} ^#{br2}`
-        return "n"
-    end
-    module_function :showLog
-
-    def _log(lvl, str, out=STDOUT)
-        puts("# " + lvl.to_s() + ": " + str)
-    end
-    module_function :_log
-
     def log(lvl, str)
-        case lvl
-        when :DEBUG
-            _log("DEBUG".magenta(), str) if ENV["DEBUG"].to_s() != ""
-        when :DEBUG_CI
-            _log("DEBUG_CI".magenta(), str) if ENV["DEBUG_CI"].to_s() != ""
-        when :VERBOSE
-            _log("INFO".blue(), str) if @@verbose_log == true
-        when :INFO
-            _log("INFO".green(), str)
-        when :WARNING
-            _log("WARNING".brown(), str)
-        when :ERROR
-            _log("ERROR".red(), str, STDERR)
-        else
-            _log(lvl, str)
-        end
+        @helper.log(lvl, str)
     end
     module_function :log
 
-    def crit(msg)
-        log(:ERROR, msg)
-        raise msg
-    end
-    module_function :crit
-
     def setVerbose(val)
-        @@verbose_log = val
+        self.verbose_log = val
     end
     module_function :setVerbose
-end
 
+    # Load all custom classes from the default addons directory
+    loadAddons(File.expand_path('addons', __dir__))
 
-# Load all custom classes
-ADDONS_DIR = File.expand_path('addons', __dir__)
-$LOAD_PATH.push(ADDONS_DIR)
-Dir.entries(ADDONS_DIR).each(){|entry|
-    next if (!File.file?(File.join(ADDONS_DIR, entry)) || entry !~ /\.rb$/ );
-    require entry.sub(/.rb$/, "")
-}
-$LOAD_PATH.pop()
-
-if ENV["GIT_MAINTAIN_ADDON_DIR"].to_s() != "" then
-    ADDON_DIR=ENV["GIT_MAINTAIN_ADDON_DIR"].to_s()
-    if Dir.exist?(ADDON_DIR) then
-        $LOAD_PATH.push(ADDON_DIR)
-        Dir.entries(ADDON_DIR).each(){|entry|
-            next if (!File.file?(ADDON_DIR + "/" + entry) || entry !~ /\.rb$/ );
-            require entry.sub(/.rb$/, "")
-        }
-        $LOAD_PATH.pop()
+    # Load any eventual user custom directory if specified
+    if ENV["GIT_MAINTAIN_ADDON_DIR"].to_s != ""
+        loadAddons(ENV["GIT_MAINTAIN_ADDON_DIR"].to_s)
     end
 end
 

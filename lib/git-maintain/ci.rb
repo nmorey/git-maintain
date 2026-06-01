@@ -1,5 +1,5 @@
 module GitMaintain
-    class CI
+    class CI < Common
 
         def self.load(repo)
             repo_name = File.basename(repo.path)
@@ -14,9 +14,6 @@ module GitMaintain
         end
 
         private
-        def log(lvl, str)
-            GitMaintain::log(lvl, str)
-        end
 
         def fetch(uri_str, limit = 10)
             # You should choose a better exception.
