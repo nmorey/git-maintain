@@ -55,7 +55,7 @@ module GitMaintain
             tag_path=`mktemp`.chomp()
             puts tag_path
             tag_file = File.open(tag_path, "w+")
-            tag_file.puts "git-maintain-#{new_ver}"
+            tag_file.puts "#{self.class::REPO_NAME}-#{new_ver}"
             tag_file.puts ""
             tag_file.puts changes
             tag_file.close()
@@ -83,8 +83,15 @@ mv CHANGELOG.new CHANGELOG")
     GitMaintain::registerCustom(GitMaintainBranch::REPO_NAME,
                                 { GitMaintain::Branch => GitMaintainBranch,
                                   GitMaintain::Repo => GitMaintainRepo})
-    GitMaintain::registerCustom("cli_class_tool",
-                                { GitMaintain::Branch => GitMaintainBranch,
-                                  GitMaintain::Repo => GitMaintainRepo})
+
+    class CLIClassToolBranch < GitMaintainBranch
+        REPO_NAME = "cli_class_tool"
+    end
+    class CLIClassToolRepo < GitMaintainRepo
+    end
+
+    GitMaintain::registerCustom(CLIClassToolBranch::REPO_NAME,
+                                { GitMaintain::Branch => CLIClassToolBranch,
+                                  GitMaintain::Repo => CLIClassToolRepo})
 
 end
