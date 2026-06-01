@@ -13,57 +13,9 @@ opts = {
     :br_suff => "master",
     :yn_default => nil,
 }
-ACTION_HELPS = GitMaintain::getActionAttr("ACTION_HELP")
-actionParser = OptionParser.new(nil, 60)
-actionParser.banner = "Usage: #{__FILE__} <action> [action options]"
-actionParser.separator ""
-actionParser.separator "Options:"
-actionParser.on("-h", "--help", "Display usage.") { |val| puts actionParser.to_s; exit 0 }
-actionParser.separator "Possible actions:"
-ACTION_HELPS.each(){|k, x|
-    actionParser.separator "\t * " + k.to_s() + ": " + x
-}
-custom_classes = GitMaintain::getCustomClasses()
-if custom_classes.length > 0 then
-actionParser.separator "Custom repo addons available:"
-custom_classes.each(){|k, x|
-    actionParser.separator "\t * " + k.to_s()
-}
 
+GitMaintain.run_cli(opts) do |parser, phase, action_opts|
+    if phase == :action
+        parser.on("-b", "--branch-suffix [SUFFIX]", "Branch suffix. Default is 'master'.") { |val| action_opts[:br_suff] = val }
+    end
 end
-
-rest = actionParser.order!(ARGV);
-if rest.length <= 0 then
-    STDERR.puts("Error: No action provided")
-    puts actionParser.to_s()
-    exit 1
-end
-
-action_s = ARGV[0]
-action = action_s.to_sym()
-raise("Invalid action '#{action_s}'") if GitMaintain::getActionAttr("ACTION_LIST").index(action) == nil
-opts[:action] = action
-ARGV.shift()
-
-optsParser = OptionParser.new(nil, 60)
-optsParser.banner = "Usage: #{__FILE__} #{action_s} "
-optsParser.separator "# " + ACTION_HELPS[action].to_s()
-optsParser.separator ""
-optsParser.separator "Options:"
-optsParser.on("-h", "--help", "Display usage.") { |val| puts optsParser.to_s; exit 0 }
-optsParser.on("-b", "--branch-suffix [SUFFIX]", "Branch suffix. Default is 'master'.") {
-    |val| opts[:br_suff] = val}
-optsParser.on("-n", "--no", "Assume no to all questions.") {
-    |val| opts[:yn_default] = :no}
-optsParser.on("-y", "--yes", "Assume yes to all questions.") {
-    |val| opts[:yn_default] = :yes}
-optsParser.on("--verbose", "Displays more informations.") {
-    |val| GitMaintain::setVerbose(true)}
-GitMaintain::setOpts(action, optsParser, opts)
-
-rest = optsParser.order!(ARGV);
-raise("Extra Unexpected extra arguments provided: " + rest.map(){|x|"'" + x + "'"}.join(", ")) if rest.length != 0
-
-GitMaintain::checkOpts(opts)
-GitMaintain::execAction(opts, opts[:action])
-
