@@ -216,9 +216,9 @@ module GitMaintain
                 }
 
                 # Run epilogue (if it exists)
-                begin
-                    brClass.send(action.to_s() + "_epilogue", opts, res)
-                rescue NoMethodError
+                # Use the first branch to run it so we have an existing Object
+                if branchList[0].respond_to?((action.to_s() + "_epilogue").to_sym())
+                    branchList[0].public_send(action.to_s() + "_epilogue", opts, res)
                 end
 
                 break if opts[:watch] == false
@@ -498,7 +498,7 @@ module GitMaintain
         # @param opts [Hash] Options hash containing configuration and accumulated branch specs in `opts[:push_branches]`
         # @param branches [Array] Ignored branch list from map send (we use accumulator in `opts[:push_branches]`)
         # @raise [RunError] If git push execution fails
-        def self.push_epilogue(opts, branches)
+        def push_epilogue(opts, branches)
             push_list = opts[:push_branches] || []
             return if push_list.length == 0
 
@@ -615,7 +615,7 @@ module GitMaintain
         # @param opts [Hash] Options hash containing configuration and accumulated branch specs in `opts[:delete_branches]`
         # @param branches [Array] Ignored branch list from map send (we use accumulator in `opts[:delete_branches]`)
         # @raise [RunError] If git branch deletion fails
-        def self.delete_epilogue(opts, branches)
+        def delete_epilogue(opts, branches)
             delete_list = opts[:delete_branches] || []
             return if delete_list.length == 0
             puts "Deleting #{opts[:delete_remote] == true ? "remote" : "local"} branches: #{delete_list.join(" ")}"
