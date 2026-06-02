@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.homepage    =
     'https://github.com/nmorey/git-maintain'
   s.license       = 'GPL-3.0'
-  s.add_dependency 'cli_class_tool', '>= 0.2.1'
+  s.add_dependency 'cli_class_tool', '>= 0.3.0'
   if (RUBY_VERSION < '2.7.0')
       s.add_dependency 'octokit', '>= 3.0', '< 5'
   else

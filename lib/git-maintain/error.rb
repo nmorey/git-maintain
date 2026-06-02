@@ -4,23 +4,6 @@ module GitMaintain
     class GitMaintainError < RuntimeError
     end
 
-    # Exception raised when a shell command fails
-    class RunError < GitMaintainError
-        # Initialize a new RunError
-        # @param err_code [Integer] Exit code
-        # @param msg [String] Error message
-        def initialize(err_code, msg = nil)
-            super("Command failed with error code '#{err_code}'")
-            @err_code = err_code
-            @msg = msg
-        end
-        # @!attribute [r] err_code
-        #   @return [Integer] The exit code of the failed command
-        # @!attribute [r] msg
-        #   @return [String] Optional error message
-        attr_reader :err_code, :msg
-    end
-
     # Exception raised when cherry-pick is aborted by user
     class CPAbort < GitMaintainError
     end
