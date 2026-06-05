@@ -148,8 +148,8 @@ module GitMaintain
 
         # Initialize the BranchIterator instance
         def initialize()
-            repo   = Repo::load()
-            ci     = CI::load(repo)
+            @repo   = Repo::load()
+            @ci     = CI::load(@repo)
         end
 
         # Define wrappers for all actions, each calling iterateAction
@@ -167,23 +167,21 @@ module GitMaintain
         # @param action [Symbol] Action name to execute
         # @raise [GitMaintainError] If executing the action fails
         def iterateAction(opts, action)
-            repo   = Repo::load()
-            ci = CI::load(repo)
-            opts[:repo] = repo
-            opts[:ci] = ci
-            brClass = GitMaintain::getExtendedClass(Branch, repo.name)
+            opts[:repo] = @repo
+            opts[:ci] = @ci
+            brClass = GitMaintain::getExtendedClass(Branch, @repo.name)
 
             if NO_FETCH_ACTIONS.index(action) == nil && opts[:fetch] != false then
-                GitMaintain::log(:INFO, "Fetching stable repo")
-                repo.stableUpdate(opts[:fetch])
+                log(:INFO, "Fetching stable repo")
+                @repo.stableUpdate(opts[:fetch])
             end
 
-            branches = getBranchList(opts, action, repo, ci)
+            branches = getBranchList(opts, action)
 
             if opts[:watch] == false
                 # One shot run
                 runOnBranches(opts, action, branches)
-                GitMaintain::log(:INFO, "Done working on selected branches")
+                log(:INFO, "Done working on selected branches")
                 return
             end
 
@@ -195,7 +193,7 @@ module GitMaintain
                 runOnBranches(opts, action, branches)
 
                 sleep(opts[:watch])
-                ci.emptyCache()
+                @ci.emptyCache()
             end
             # No need for a log message here, the only exit condition
             # is a Ctr-C that trigger an exception
@@ -207,31 +205,29 @@ module GitMaintain
         #
         # @param opts [Hash] Options hash
         # @param action [Symbol] Action name to execute
-        # @param repo [Repo] The Repo instance
-        # @param ci [CI] The CI instance
         # @return [Array<Branch>] Array of relevant branches
-        def getBranchList(opts, action, repo, ci)
+        def getBranchList(opts, action)
             # Direct branch selection
             if opts[:manual_branch] != nil then
-                return [ Branch::load(repo, opts[:manual_branch], ci, opts[:br_suff]) ]
+                return [ Branch::load(@repo, opts[:manual_branch], @ci, opts[:br_suff]) ]
             end
 
             unfilteredList = nil
             if ALL_BRANCHES_ACTIONS.index(action) != nil then
-                unfilteredList = repo.getStableBranchList()
+                unfilteredList = @repo.getStableBranchList()
             else
-                unfilteredList = repo.getBranchList(opts[:br_suff])
+                unfilteredList = @repo.getBranchList(opts[:br_suff])
             end
 
             return unfilteredList.map(){|br|
-                    branch = Branch::load(repo, br, ci, opts[:br_suff])
+                    branch = Branch::load(@repo, br, @ci, opts[:br_suff])
                     case branch.is_targetted?(opts)
                     when :too_old
-                        GitMaintain::log(:VERBOSE, "Skipping older v#{branch.version}")
+                        log(:VERBOSE, "Skipping older v#{branch.version}")
                         next
                     when :no_match
-                        GitMaintain::log(:VERBOSE, "Skipping v#{branch.version} not matching" +
-                                                   opts[:version].to_s())
+                        log(:VERBOSE, "Skipping v#{branch.version} not matching" +
+                                      opts[:version].to_s())
                         next
                     end
                     branch
@@ -244,7 +240,7 @@ module GitMaintain
             # Iterate concerned on all branches
             branches.each(){|branch|
                 if NO_CHECKOUT_ACTIONS.index(action) == nil  then
-                    GitMaintain::log(:INFO, "Working on #{branch.verbose_name}")
+                    log(:INFO, "Working on #{branch.verbose_name}")
                     branch.checkout()
                 end
                 res << branch.send(action, opts)
