@@ -3,38 +3,14 @@ module GitMaintain
 
     # Iterator class. List all the branch specific actions and trigger  that action on all relevant branches
     class BranchIterator < Common
+
+        EXTENDED_CLASS = GitMaintain::getExtendedClass(Branch)
+
         # List of all available maintenance actions.
-        ACTION_LIST = [
-            :cp, :steal, :list,
-            :merge, :pull, :push, :monitor,
-            :release, :reset, :create, :delete
-        ]
-        # Actions that do not require updating the remote repository first.
-        NO_FETCH_ACTIONS = [
-            :cp, :merge, :monitor, :release, :delete
-        ]
-        # Actions that do not require checking out the local branch before running.
-        NO_CHECKOUT_ACTIONS = [
-            :create, :delete, :list, :push, :monitor
-        ]
-        # Actions that run on all branches, regardless of target versions.
-        ALL_BRANCHES_ACTIONS = [
-            :create
-        ]
-        # Description map of actions for CLI help output.
-        ACTION_HELP = {
-            :cp => "Backport commits and eventually push them to github",
-            :create => "Create missing local branches from all the stable branches",
-            :delete => "Delete all local branches using the suffix",
-            :steal => "Steal commit from upstream that fixes commit in the branch or were tagged as stable",
-            :list => "List commit present in the branch but not in the stable branch",
-            :merge => "Merge branch with suffix specified in -m <suff> into the main branch",
-            :push => "Push branches to github for validation",
-            :pull => "Rebase branches on top of the upstream one",
-            :monitor => "Check the CI state of all branches",
-            :release => "Create new release on all concerned branches",
-            :reset => "Reset branch against upstream",
-        }
+        [:ACTION_LIST, :NO_FETCH_ACTIONS, :NO_CHECKOUT_ACTIONS,
+         :ALL_BRANCHES_ACTIONS, :ACTION_HELP].each() do |field|
+            const_set(field, EXTENDED_CLASS.const_get(field))
+        end
 
 
         # Configure action-specific command line options.
@@ -43,83 +19,9 @@ module GitMaintain
         # @param optsParser [OptionParser] The OptionParser instance to configure
         # @param opts [Hash] The options hash to populate
         def self.set_opts(action, optsParser, opts)
-            opts[:base_ver] = 0
-            opts[:version] = []
-            opts[:commits] = []
-            opts[:do_merge] = false
-            opts[:push_force] = false
-            opts[:no_ci] = false
-            opts[:steal_base] = nil
-            opts[:check_only] = false
-            opts[:fetch] = nil
-            opts[:watch] = false
-            opts[:delete_remote] = false
-            opts[:no_edit] = false
-            opts[:stable] = false
-
-            optsParser.on("-v", "--base-version [MIN_VER]", Integer, "Older release to consider.") {
-                |val| opts[:base_ver] = val}
-            optsParser.on("-V", "--version [regexp]", Regexp, "Regexp to filter versions.") {
-                |val| opts[:version] << val}
-
-            if  ALL_BRANCHES_ACTIONS.index(action) == nil &&
-                action != :merge &&
-                action != :delete then
-                optsParser.on("-B", "--manual-branch <branch name>", "Work on a specific (non-stable) branch.") {
-                    |val| opts[:manual_branch] = val}
-            end
-
-            if NO_FETCH_ACTIONS.index(action) == nil
-                optsParser.on("--[no-]fetch", "Enable/Disable fetch of stable repo.") {
-                    |val| opts[:fetch] = val}
-            end
-
-            case action
-            when :cp
-                optsParser.banner += "-c <sha1> [-c <sha1> ...]"
-                optsParser.on("-c", "--sha1 [SHA1]", String, "Commit to cherry-pick. Can be used multiple time.") {
-                    |val| opts[:commits] << val}
-            when :delete
-                optsParser.on("--remote", "Delete the remote staging branch instead of the local ones.") {
-                    |val| opts[:delete_remote] = true}
-            when :list
-                optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
-                    opts[:stable] = true }
-            when :merge
-                optsParser.banner += "-m <suffix>"
-                optsParser.on("-m", "--merge [SUFFIX]", "Merge branch with suffix.") {
-                    |val| opts[:do_merge] = val}
-            when :monitor
-                optsParser.on("-w", "--watch <PERIOD>", Integer,
-                              "Watch and refresh CI status every <PERIOD>.") {
-                    |val| opts[:watch] = val}
-                optsParser.on("--stable", "Check CI status on stable repo.") {
-                    opts[:stable] = true }
-            when :pull
-                optsParser.on("--stable", "List unreleased commits in the upstream stable branch.") {
-                    opts[:stable] = true }
-            when :push
-                optsParser.banner += "[-f]"
-                optsParser.on("-f", "--force", "Add --force to git push (for 'push' action).") {
-                    opts[:push_force] = true}
-                optsParser.on("--stable", "Push to stable repo.") {
-                    opts[:stable] = true }
-                optsParser.banner += "[-T]"
-                optsParser.on("-T", "--no-ci", "Ignore CI build status and push anyway.") {
-                    opts[:no_ci] = true}
-                optsParser.on("-c", "--check", "Check if there is something to be pushed.") {
-                    opts[:check_only] = true}
-            when :release
-                optsParser.on("--no-edit", "Do not edit release commit nor tag.") {
-                    opts[:no_edit] = true }
-            when :steal
-                optsParser.banner += "[-a][-b <HEAD>]"
-                optsParser.on("-a", "--all", "Check all commits from master. "+
-                                             "By default only new commits (since last successful run) are considered.") {
-                    |val| opts[:steal_base] = :all}
-                optsParser.on("-b", "--base <HEAD>", "Check all commits from this commit. "+
-                                                     "By default only new commits (since last successful run) are considered.") {
-                    |val| opts[:steal_base] = val}
+            Branch.set_opts(action, optsParser, opts)
+            if EXTENDED_CLASS != Branch && EXTENDED_CLASS.respond_to?(:set_opts)
+                EXTENDED_CLASS.set_opts(action, optsParser, opts)
             end
         end
 
@@ -128,22 +30,10 @@ module GitMaintain
         # @param opts [Hash] Options hash to validate and configure
         # @raise [InvalidArgumentError] If options are invalid or conflicting
         def self.check_opts(opts)
-            if opts[:action] == :release then
-                if opts[:br_suff] != "master" then
-                    raise InvalidArgumentError.new("Action #{opts[:action]} can only be done on 'master' suffixed branches")
-                end
+            Branch.check_opts(opts)
+            if EXTENDED_CLASS != Branch && EXTENDED_CLASS.respond_to?(:check_opts)
+                EXTENDED_CLASS.check_opts(opts)
             end
-            if opts[:action] == :delete && opts[:delete_remote] != true then
-                if opts[:br_suff] == "master" then
-                    raise InvalidArgumentError.new("Action #{opts[:action]} can NOT be done on 'master' suffixed branches")
-                end
-            end
-            if opts[:action] == :push
-                if opts[:stable] == true && opts[:push_force] == true then
-                    raise InvalidArgumentError.new("Action push  can NOT be use both --stable and --force")
-                end
-            end
-            opts[:version] = [ /.*/ ] if opts[:version].length == 0
         end
 
         # Initialize the BranchIterator instance
@@ -151,7 +41,6 @@ module GitMaintain
             @repo   = Repo::load()
             @ci     = CI::load(@repo)
         end
-
         # Define wrappers for all actions, each calling iterateAction
         ACTION_LIST.each do |action|
             define_method(action) do |opts|
