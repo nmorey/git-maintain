@@ -78,11 +78,8 @@ class GitMaintainTest < Minitest::Test
   end
 
   def test_repo_command_execution_failure
-    # Create a temporary directory and test Repo and CLIClassTool command execution
-    dir = `mktemp -d`.chomp
-    `cd "#{dir}" && git init`
     begin
-      repo = GitMaintain::Repo.load(dir)
+      repo = GitMaintain::Repo.load()
       # Non-existent command should raise RunError
       assert_raises(GitMaintain::RunError) do
         repo.run("nonexistentcommand")
@@ -91,8 +88,6 @@ class GitMaintainTest < Minitest::Test
       assert_raises(GitMaintain::NoRefError) do
         repo.ref_exist?("nonexistentref")
       end
-    ensure
-      `rm -rf #{dir}`
     end
   end
 end
