@@ -18,19 +18,7 @@ module GitMaintain
         end
 
     end
-end
 
-require_relative 'ci'
-require_relative 'travis'
-require_relative 'azure'
-require_relative 'repo'
-require_relative 'branch'
-require_relative 'branch_iterator'
-
-# Re-open the module to declare registry functions and load addons.
-module GitMaintain
-    # Action classes supported by git-maintain CLI.
-    ACTION_CLASS = [ Common, BranchIterator, Repo ]
     # Internal registry for custom repo-specific adapters.
     @@custom_classes = {}
 
@@ -77,6 +65,20 @@ module GitMaintain
         self.verbose_log = val
     end
     module_function :setVerbose
+
+end
+
+require_relative 'ci'
+require_relative 'travis'
+require_relative 'azure'
+require_relative 'repo'
+require_relative 'branch'
+require_relative 'branch_iterator'
+
+# Re-open the module to declare registry functions and load addons.
+module GitMaintain
+    # Action classes supported by git-maintain CLI.
+    ACTION_CLASS = [ Common, BranchIterator, Repo ]
 
     # Load all custom classes from the default addons directory
     loadAddons(File.expand_path('addons', __dir__))
