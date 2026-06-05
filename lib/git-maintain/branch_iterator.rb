@@ -4,7 +4,11 @@ module GitMaintain
     # Iterator class. List all the branch specific actions and trigger  that action on all relevant branches
     class BranchIterator < Common
 
-        EXTENDED_CLASS = GitMaintain::getExtendedClass(Branch)
+        begin
+            const_set(:EXTENDED_CLASS, GitMaintain::getExtendedClass(Branch))
+        rescue RunError
+            const_set(:EXTENDED_CLASS, Branch)
+        end
 
         # List of all available maintenance actions.
         [:ACTION_LIST, :NO_FETCH_ACTIONS, :NO_CHECKOUT_ACTIONS,

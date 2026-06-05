@@ -22,6 +22,9 @@ module GitMaintain
     # Internal registry for custom repo-specific adapters.
     @@custom_classes = {}
 
+    # Internal cached repo path and name
+    @@repo_infos = nil
+
     # Register custom classes (Repo, Branch, CI) for a specific repository name.
     #
     # @param repo_name [String] Name of the repository (e.g. 'rdma-core')
@@ -34,27 +37,35 @@ module GitMaintain
     end
     module_function :registerCustom
 
+    def getRepoInfos()
+        return @@repo_infos if @@repo_infos != nil
+
+        dir = File.realdirpath(".")
+        begin
+            repo_path = Common::run(dir, "git rev-parse  --show-toplevel 2> /dev/null")
+        rescue RunError
+            raise NotARepoError.new(dir)
+        end
+        return @@repo_infos = [repo_path, File.basename(repo_path)]
+    end
+    module_function :getRepoInfos
+
     # Retrieve the registered custom subclass for a given default class and repository name.
     # Returns the default_class if no custom class is registered.
     #
     # @param default_class [Class] Default class to resolve (e.g. Repo)
     # @param repo_name [String] Repository name to search for
     # @return [Class] The resolved class (either the custom subclass or the default_class)
-    def getExtendedClass(default_class, repo_name = nil)
-        if repo_name == nil then
-            dir = File.realdirpath(".")
-            begin
-                repo_path = Common::run(dir, "git rev-parse  --show-toplevel 2> /dev/null")
-            rescue RunError
-                repo_path = dir
+    def getExtendedClass(default_class, repo_name=nil)
+        begin
+            (_repo_path, repo_name) = getRepoInfos() if repo_name == nil
+            custom = @@custom_classes[repo_name]
+            if custom != nil && custom[default_class] != nil then
+                return custom[default_class]
+            else
+                return default_class
             end
-            repo_name = File.basename(repo_path)
-        end
-
-        custom = @@custom_classes[repo_name]
-        if custom != nil && custom[default_class] != nil then
-            return custom[default_class]
-        else
+        rescue NotARepoError
             return default_class
         end
     end
