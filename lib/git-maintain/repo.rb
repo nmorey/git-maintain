@@ -31,14 +31,8 @@ module GitMaintain
         # @param path [String] Repository directory path (defaults to current working directory)
         # @return [Repo] The loaded Repo instance (or subclass)
         # @raise [GitMaintainError] If class loading fails
-        def self.load(path=".")
-            dir = File.realdirpath(path)
-            begin
-                repo_path = self.run(dir, "git rev-parse  --show-toplevel 2> /dev/null")
-            rescue RunError
-                raise NotARepoError.new(dir)
-            end
-            repo_name = File.basename(repo_path)
+        def self.load()
+            (repo_path, repo_name) = GitMaintain::getRepoInfos()
             return GitMaintain::loadClass(Repo, repo_name, repo_path)
         end
 
