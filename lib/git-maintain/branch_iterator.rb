@@ -169,7 +169,6 @@ module GitMaintain
         def iterateAction(opts, action)
             opts[:repo] = @repo
             opts[:ci] = @ci
-            brClass = GitMaintain::getExtendedClass(Branch, @repo.name)
 
             if NO_FETCH_ACTIONS.index(action) == nil && opts[:fetch] != false then
                 log(:INFO, "Fetching stable repo")
