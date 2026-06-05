@@ -46,7 +46,7 @@ module GitMaintain
             begin
                 repo_path = Common::run(dir, "git rev-parse  --show-toplevel 2> /dev/null")
             rescue RunError
-                raise NotARepoError.new(dir)
+                repo_path = dir
             end
             repo_name = File.basename(repo_path)
         end
