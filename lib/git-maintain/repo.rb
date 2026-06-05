@@ -58,7 +58,7 @@ module GitMaintain
         #
         # @param path [String, nil] Repository directory path (defaults to current working directory)
         # @raise [GitMaintainError] If configuration format or values are invalid
-        def initialize(path=nil)
+        def initialize(path)
             GitMaintain::checkDirectConstructor(self.class)
 
             @path = path
