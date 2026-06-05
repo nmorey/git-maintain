@@ -80,6 +80,7 @@ class GitMaintainTest < Minitest::Test
   def test_repo_command_execution_failure
     # Create a temporary directory and test Repo and CLIClassTool command execution
     dir = `mktemp -d`.chomp
+    `cd "#{dir}" && git init`
     begin
       repo = GitMaintain::Repo.load(dir)
       # Non-existent command should raise RunError
