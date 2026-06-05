@@ -40,7 +40,17 @@ module GitMaintain
     # @param default_class [Class] Default class to resolve (e.g. Repo)
     # @param repo_name [String] Repository name to search for
     # @return [Class] The resolved class (either the custom subclass or the default_class)
-    def getExtendedClass(default_class, repo_name = File.basename(Dir.pwd()))
+    def getExtendedClass(default_class, repo_name = nil)
+        if repo_name == nil then
+            dir = File.realdirpath(".")
+            begin
+                repo_path = Common::run(dir, "git rev-parse  --show-toplevel 2> /dev/null")
+            rescue RunError
+                raise NotARepoError.new(dir)
+            end
+            repo_name = File.basename(repo_path)
+        end
+
         custom = @@custom_classes[repo_name]
         if custom != nil && custom[default_class] != nil then
             return custom[default_class]
