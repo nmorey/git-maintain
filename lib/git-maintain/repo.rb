@@ -33,8 +33,13 @@ module GitMaintain
         # @raise [GitMaintainError] If class loading fails
         def self.load(path=".")
             dir = File.realdirpath(path)
-            repo_name = File.basename(dir)
-            return GitMaintain::loadClass(Repo, repo_name, dir)
+            begin
+                repo_path = self.run(path, "git rev-parse  --show-toplevel 2> /dev/null")
+            rescue RunError
+                raise NotARepoError.new(dir)
+            end
+            repo_name = File.basename(repo_path)
+            return GitMaintain::loadClass(Repo, repo_name, repo_path)
         end
 
         # Validate parsed options for repository-level actions.
