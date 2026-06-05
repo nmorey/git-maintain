@@ -68,4 +68,14 @@ module GitMaintain
         end
         attr_reader :commit
     end
+
+    # Exception raised when git-maintain is run outside of a git repository
+    class NotARepoError < GitMaintainError
+        # Initialize a new NotARepoError
+        # @param path [String] Path where repo was expected
+        def initialize(path)
+            super("'#{path}' is not a git repository")
+        end
+    end
+
 end
