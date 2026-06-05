@@ -146,13 +146,27 @@ module GitMaintain
             opts[:version] = [ /.*/ ] if opts[:version].length == 0
         end
 
+        # Initialize the BranchIterator instance
+        def initialize()
+            repo   = Repo::load()
+            ci     = CI::load(repo)
+        end
+
+        # Define wrappers for all actions, each calling iterateAction
+        ACTION_LIST.each do |action|
+            define_method(action) do |opts|
+                iterateAction(opts, action)
+            end
+        end
+
+        private
         # Execute the specified action on the selected branch(es).
         # Loads the repo, targets branches, iterates through them, and runs any action epilogue.
         #
         # @param opts [Hash] Options hash
         # @param action [Symbol] Action name to execute
         # @raise [GitMaintainError] If executing the action fails
-        def self.execAction(opts, action)
+        def iterateAction(opts, action)
             repo   = Repo::load()
             ci = CI::load(repo)
             opts[:repo] = repo
@@ -164,15 +178,52 @@ module GitMaintain
                 repo.stableUpdate(opts[:fetch])
             end
 
-            branchList=[]
-            if opts[:manual_branch] == nil then
-                unfilteredList = nil
-                if ALL_BRANCHES_ACTIONS.index(action) != nil then
-                    unfilteredList = repo.getStableBranchList()
-                else
-                    unfilteredList = repo.getBranchList(opts[:br_suff])
-                end
-                branchList = unfilteredList.map(){|br|
+            branches = getBranchList(opts, action, repo, ci)
+
+            if opts[:watch] == false
+                # One shot run
+                runOnBranches(opts, action, branches)
+                GitMaintain::log(:INFO, "Done working on selected branches")
+                return
+            end
+
+            # Watch style action
+            loop do
+                # Timestamp on top, 'watch' style
+                system("clear; date")
+
+                runOnBranches(opts, action, branches)
+
+                sleep(opts[:watch])
+                ci.emptyCache()
+            end
+            # No need for a log message here, the only exit condition
+            # is a Ctr-C that trigger an exception
+        end
+
+
+        # List the branches the iterator should loop on
+        # This can either be manually specified, or filtered by user or some specific command
+        #
+        # @param opts [Hash] Options hash
+        # @param action [Symbol] Action name to execute
+        # @param repo [Repo] The Repo instance
+        # @param ci [CI] The CI instance
+        # @return [Array<Branch>] Array of relevant branches
+        def getBranchList(opts, action, repo, ci)
+            # Direct branch selection
+            if opts[:manual_branch] != nil then
+                return [ Branch::load(repo, opts[:manual_branch], ci, opts[:br_suff]) ]
+            end
+
+            unfilteredList = nil
+            if ALL_BRANCHES_ACTIONS.index(action) != nil then
+                unfilteredList = repo.getStableBranchList()
+            else
+                unfilteredList = repo.getBranchList(opts[:br_suff])
+            end
+
+            return unfilteredList.map(){|br|
                     branch = Branch::load(repo, br, ci, opts[:br_suff])
                     case branch.is_targetted?(opts)
                     when :too_old
@@ -185,37 +236,25 @@ module GitMaintain
                     end
                     branch
                 }.compact()
-            else
-                branchList = [ Branch::load(repo, opts[:manual_branch], ci, opts[:br_suff]) ]
-            end
-
-            loop do
-                system("clear; date") if opts[:watch] != false
-
-                res=[]
-
-                # Iterate concerned on all branches
-                branchList.each(){|branch|
-                    if NO_CHECKOUT_ACTIONS.index(action) == nil  then
-                        GitMaintain::log(:INFO, "Working on #{branch.verbose_name}")
-                        branch.checkout()
-                    end
-                    res << branch.send(action, opts)
-                }
-
-                # Run epilogue (if it exists)
-                # Use the first branch to run it so we have an existing Object
-                if branchList[0].respond_to?((action.to_s() + "_epilogue").to_sym())
-                    branchList[0].public_send(action.to_s() + "_epilogue", opts, res)
-                end
-
-                break if opts[:watch] == false
-                sleep(opts[:watch])
-                ci.emptyCache()
-            end
-            GitMaintain::log(:INFO, "Done working on selected branches")
-
         end
 
+        def runOnBranches(opts, action, branches)
+            res=[]
+
+            # Iterate concerned on all branches
+            branches.each(){|branch|
+                if NO_CHECKOUT_ACTIONS.index(action) == nil  then
+                    GitMaintain::log(:INFO, "Working on #{branch.verbose_name}")
+                    branch.checkout()
+                end
+                res << branch.send(action, opts)
+            }
+
+            # Run epilogue (if it exists)
+            # Use the first branch to run it so we have an existing Object
+            if branches[0].respond_to?((action.to_s() + "_epilogue").to_sym())
+                branches[0].public_send(action.to_s() + "_epilogue", opts, res)
+            end
+        end
     end
 end
