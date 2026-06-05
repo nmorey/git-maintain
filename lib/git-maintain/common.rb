@@ -3,7 +3,6 @@ require 'cli_class_tool'
 # Main module for git-maintain repository maintenance tool.
 module GitMaintain
     extend CLIClassTool::Utils
-    extend CLIClassTool::Logger
 
     # Base class for git-maintain components providing generic logging and CLI utility helpers.
     class Common < CLIClassTool::Common

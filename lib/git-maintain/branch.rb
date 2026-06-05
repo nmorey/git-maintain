@@ -196,7 +196,7 @@ module GitMaintain
         # @param opts [Hash] Options hash
         # @raise [RunError] If running git commands fails
         def list(opts)
-            GitMaintain::log(:INFO, "Working on #{@verbose_name}")
+            log(:INFO, "Working on #{@verbose_name}")
             if opts[:stable] == true then
                 # List commits in the stable_branch that are no in the latest release
                 showLog(opts, @remote_ref, runGit("describe --abbrev=0 #{@local_branch}"))
