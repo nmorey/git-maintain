@@ -3,6 +3,7 @@ require 'cli_class_tool'
 # Main module for git-maintain repository maintenance tool.
 module GitMaintain
     extend CLIClassTool::Utils
+    extend CLIClassTool::Logger
 
     # Base class for git-maintain components providing generic logging and CLI utility helpers.
     class Common < CLIClassTool::Common
@@ -32,8 +33,6 @@ module GitMaintain
     ACTION_CLASS = [ Common, Branch, Repo ]
     # Internal registry for custom repo-specific adapters.
     @@custom_classes = {}
-    # Internal helper instance for package-level logging.
-    @helper = Common.new
 
     # Register custom classes (Repo, Branch, CI) for a specific repository name.
     #
@@ -70,15 +69,6 @@ module GitMaintain
         return @@custom_classes
     end
     module_function :getCustomClasses
-
-    # Log a message at the package level using the internal helper.
-    #
-    # @param lvl [Symbol] Log level (e.g. :INFO, :WARNING, :ERROR)
-    # @param str [String] Message string
-    def log(lvl, str)
-        @helper.log(lvl, str)
-    end
-    module_function :log
 
     # Set whether verbose log is enabled.
     #
