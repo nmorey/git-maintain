@@ -34,7 +34,7 @@ module GitMaintain
         def self.load(path=".")
             dir = File.realdirpath(path)
             begin
-                repo_path = self.run(path, "git rev-parse  --show-toplevel 2> /dev/null")
+                repo_path = self.run(dir, "git rev-parse  --show-toplevel 2> /dev/null")
             rescue RunError
                 raise NotARepoError.new(dir)
             end
