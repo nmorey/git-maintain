@@ -26,11 +26,12 @@ require_relative 'travis'
 require_relative 'azure'
 require_relative 'repo'
 require_relative 'branch'
+require_relative 'branch_iterator'
 
 # Re-open the module to declare registry functions and load addons.
 module GitMaintain
     # Action classes supported by git-maintain CLI.
-    ACTION_CLASS = [ Common, Branch, Repo ]
+    ACTION_CLASS = [ Common, BranchIterator, Repo ]
     # Internal registry for custom repo-specific adapters.
     @@custom_classes = {}
 
