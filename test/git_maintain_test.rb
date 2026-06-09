@@ -90,4 +90,100 @@ class GitMaintainTest < Minitest::Test
       end
     end
   end
+
+  def test_cp_breaker_option_parsing
+    opts = {
+        :br_suff => "master",
+        :yn_default => nil,
+    }
+    parser = OptionParser.new
+    GitMaintain::BranchIterator.set_opts(:cp, parser, opts)
+    parser.parse!(["-c", "abcdef012345", "--breaker", "1234567890ab"])
+
+    assert_equal ["abcdef012345"], opts[:commits]
+    assert_equal "1234567890ab", opts[:breaker]
+  end
+
+  def test_cp_breaker_filtering
+    orig_repo_infos = GitMaintain.class_variable_get(:@@repo_infos) rescue nil
+    GitMaintain.class_variable_set(:@@repo_infos, nil)
+
+    begin
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          # Initialize git repo and set identity
+          `git init`
+          `git checkout -b master 2>/dev/null || git checkout master 2>/dev/null || true`
+          `git config user.name "Test User"`
+          `git config user.email "test@example.com"`
+
+          # Set up git-maintain configurations
+          `git config maintain.valid-repo origin`
+          `git config maintain.stable-repo origin`
+          `git config maintain.branch-format 'v([0-9]+)'`
+          `git config maintain.stable-branch-format 'stable/\\\\1'`
+          `git config maintain.stable-base-format 'v\\\\1.0'`
+
+          # Make initial commit
+          File.write("foo", "initial content")
+          `git add foo`
+          `git commit -m "initial commit"`
+          `git remote add origin .`
+
+          # Create stable base tags so findStableBase can resolve them
+          `git tag v1.0`
+          `git tag v2.0`
+
+          # Create a "breaker" commit on master
+          File.write("foo", "breaker content")
+          `git add foo`
+          `git commit -m "breaker commit"`
+          breaker_sha = `git rev-parse HEAD`.strip
+
+          # Create a "fix" commit on master
+          File.write("foo", "fix content")
+          `git add foo`
+          `git commit -m "fix commit"`
+          fix_sha = `git rev-parse HEAD`.strip
+
+          # Create branch "v1/master" that does NOT contain the breaker (forked from initial commit)
+          `git checkout -b v1/master HEAD~2 2>/dev/null`
+
+          # Create branch "v2/master" that DOES contain the breaker (forked from breaker commit)
+          `git checkout -b v2/master #{breaker_sha} 2>/dev/null`
+
+          # Load repo and branches
+          repo = GitMaintain::Repo.load()
+          br1 = GitMaintain::Branch.load(repo, "1", nil, "master")
+          br2 = GitMaintain::Branch.load(repo, "2", nil, "master")
+
+          # Verify is_in_tree? correctly finds or doesn't find the breaker
+          br1.checkout()
+          assert_equal false, br1.send(:is_in_tree?, breaker_sha)
+
+          br2.checkout()
+          assert_equal true, br2.send(:is_in_tree?, breaker_sha)
+
+          # Verify cp with breaker on br1 (should skip because breaker is missing)
+          br1.checkout()
+          initial_head_1 = `git rev-parse HEAD`.strip
+          br1.cp({ :commits => [fix_sha], :breaker => breaker_sha })
+          assert_equal initial_head_1, `git rev-parse HEAD`.strip, "v1/master should have skipped cp"
+
+          # Verify cp with breaker on br2 (should succeed because breaker is present)
+          br2.checkout()
+          initial_head_2 = `git rev-parse HEAD`.strip
+          br2.cp({ :commits => [fix_sha], :breaker => breaker_sha })
+          refute_equal initial_head_2, `git rev-parse HEAD`.strip, "v2/master should have applied cp"
+
+          # Verify that running cp again skips the already applied patch (head doesn't change)
+          post_head_2 = `git rev-parse HEAD`.strip
+          br2.cp({ :commits => [fix_sha], :breaker => breaker_sha })
+          assert_equal post_head_2, `git rev-parse HEAD`.strip, "v2/master should have skipped already applied cp"
+        end
+      end
+    ensure
+      GitMaintain.class_variable_set(:@@repo_infos, orig_repo_infos)
+    end
+  end
 end

@@ -34,7 +34,7 @@ _git_maintain_cp()
    local OPT_LIST=$(_git_maintain_genoptlist git maintain cp)
 
     case "$prev" in
-		-c|--sha1);;
+		-c|--sha1|--breaker);;
 		*)
 			__gitcomp_nl "$OPT_LIST"
 	        _complete_git_maintain_branch

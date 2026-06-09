@@ -44,6 +44,7 @@ module GitMaintain
             opts[:base_ver] = 0
             opts[:version] = []
             opts[:commits] = []
+            opts[:breaker] = nil
             opts[:do_merge] = false
             opts[:push_force] = false
             opts[:no_ci] = false
@@ -77,6 +78,8 @@ module GitMaintain
                 optsParser.banner += "-c <sha1> [-c <sha1> ...]"
                 optsParser.on("-c", "--sha1 [SHA1]", String, "Commit to cherry-pick. Can be used multiple time.") {
                     |val| opts[:commits] << val}
+                optsParser.on("--breaker SHA", String, "Only apply patch if the breaker (or a cherry-pick of it) is contained within the branch.") {
+                    |val| opts[:breaker] = val}
             when :delete
                 optsParser.on("--remote", "Delete the remote staging branch instead of the local ones.") {
                     |val| opts[:delete_remote] = true}
@@ -260,7 +263,17 @@ module GitMaintain
         # @param opts [Hash] Options hash containing `:commits` to pick
         # @raise [CPAbort] If cherry-pick is aborted by the user
         def cp(opts)
+            if opts[:breaker] != nil then
+                if !is_in_tree?(opts[:breaker]) then
+                    log(:INFO, "Skipping #{verbose_name}: breaker #{opts[:breaker]} not in tree")
+                    return
+                end
+            end
             opts[:commits].each(){|commit|
+                if is_in_tree?(commit) then
+                    log(:INFO, "Commit #{commit} is already in tree, skipping")
+                    next
+                end
                 prev_head=runGit("rev-parse HEAD")
                 log(:INFO, "Applying #{@repo.getCommitHeadline(commit)}")
                 begin
