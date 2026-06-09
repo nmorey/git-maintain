@@ -648,7 +648,7 @@ module GitMaintain
 	    runGit("log --pretty=\"%H\" -F --grep \"#{subj.gsub("\"", '\\"')}\" "+
                          "#{@stable_base}..HEAD").split("\n").each(){|cmt|
                 cursubj=runGit("log -1 --format=\"%s\" #{cmt}")
-                if cursubj = subj then
+                if cursubj == subj then
 	            return true
 		end
 	    }
