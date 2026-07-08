@@ -89,7 +89,7 @@ module GitMaintain
             end
 
             @branch_format_raw = getGitConfig("maintain.branch-format")
-            @branch_format = Regexp.new(/#{@branch_format_raw}/)
+            @branch_format = Regexp.new(@branch_format_raw)
             @stable_branch_format = getGitConfig("maintain.stable-branch-format")
             @stable_base_format = getGitConfig("maintain.stable-base-format")
 
@@ -208,7 +208,7 @@ module GitMaintain
             return @branch_list if @branch_list != nil
 
             @branch_list=runGit("branch").split("\n").map(){|x|
-                x=~ /#{@branch_format_raw}\/#{br_suff}$/ ?
+                x=~ Regexp.new("#{@branch_format_raw}/#{br_suff}$") ?
                     $1 : nil
             }.compact().uniq()
 
@@ -223,7 +223,7 @@ module GitMaintain
             return @stable_branches if @stable_branches != nil
 
             @stable_branches=runGit("branch -a").split("\n").map(){|x|
-                x=~ /remotes\/#{@@STABLE_REPO}\/#{@stable_branch_format.gsub(/\\1/, '([0-9]+)')}$/ ?
+                x=~ Regexp.new("remotes/#{@@STABLE_REPO}/#{@stable_branch_format.gsub(/\\1/, '([0-9]+)')}$") ?
                     $1 : nil
             }.compact().uniq()
 
@@ -239,7 +239,7 @@ module GitMaintain
 
             @suffix_list = runGit("branch").split("\n").map(){|x|
                 x=~ @branch_format ?
-                    /^\*?\s*#{@branch_format_raw}\/([a-zA-Z0-9_-]+)\s*$/.match(x)[-1] :
+                    Regexp.new("^\\*?\\s*#{@branch_format_raw}/([a-zA-Z0-9_-]+)\\s*$").match(x)[-1] :
                     nil
             }.compact().uniq()
 
@@ -375,7 +375,7 @@ module GitMaintain
         def findStableBase(branch)
             base=nil
             if branch =~ @branch_format then
-                base = branch.gsub(/^\*?\s*#{@branch_format_raw}\/.*$/, @stable_base_format)
+                base = branch.gsub(Regexp.new("^\\*?\\s*#{@branch_format_raw}/.*$"), @stable_base_format)
             end
 
             @stable_base_patterns.each(){|pattern, b|
