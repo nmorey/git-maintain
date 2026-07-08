@@ -37,7 +37,7 @@ module GitMaintain
                     raise GitMaintainError.new("No release type specified use --stable or --major")
                 when :major
                     if opts[:manual_branch] == nil then
-                        log(:INFO, "Major release selected. Auto-forcing branch to master")
+                        GitMaintain::log(:INFO, "Major release selected. Auto-forcing branch to master")
                         opts[:manual_branch] = "master"
                     end
                 end
