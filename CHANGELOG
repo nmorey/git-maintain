@@ -1,3 +1,7 @@
+------------------
+0.13.0  (2026-09-09)
+------------------
+
 * Major internal refactor
   * CLI code has been moded to cli_class_tool
   * Replace all return values by exceptions
