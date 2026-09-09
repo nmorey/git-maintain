@@ -4,7 +4,7 @@ source "https://rubygems.org"
 
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
-gem 'cli_class_tool'
+gem 'cli_class_tool', ">= 1.0.0", "<= 2.0.0"
 gem 'rake'
 gem 'minitest'
 gem 'base64'

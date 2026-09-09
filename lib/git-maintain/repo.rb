@@ -416,7 +416,8 @@ module GitMaintain
             end
 
             log(:WARNING, "This will officially release these tags: #{new_tags.join(", ")}")
-            rep = confirm(opts, "release them", true)
+            rep = confirm(opts, "release them",
+                          ignore_default: true)
             if rep != 'y' then
                 raise GitMaintainError.new("Aborting..")
             end
@@ -426,7 +427,8 @@ module GitMaintain
             end
 
             log(:WARNING, "Last chance to cancel before submitting")
-            rep= confirm(opts, "submit these releases", true)
+            rep= confirm(opts, "submit these releases",
+                         ignore_default: true)
             if rep != 'y' then
                 raise GitMaintainError.new("Aborting..")
             end

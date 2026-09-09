@@ -588,7 +588,7 @@ module GitMaintain
             delete_list = opts[:delete_branches] || []
             return if delete_list.length == 0
             puts "Deleting #{opts[:delete_remote] == true ? "remote" : "local"} branches: #{delete_list.join(" ")}"
-            rep = confirm(opts, "continue", true)
+            rep = confirm(opts, "continue", ignored_default: true)
             if rep != "y" then
                 log(:INFO, "Cancelling")
                 return
@@ -748,7 +748,10 @@ module GitMaintain
             runGitInteractive("diff")
             log( :INFO, "Entering subshell to fix conflicts. Exit when done")
             runSystem("PS1_WARNING='CP FIX' bash", false)
-            rep = confirm(opts, "continue with scp [y(es), n(o), s(kip)]?", true, ["y", "n", "s"])
+            rep = confirm(opts, "continue with scp",
+                          ignore_default: true,
+                          allowed_reps: ["y", "n", "s"],
+                          usage: "[y]es, [n]o, [s]kip")
             case rep
             when "n"
                 runGitInteractive("cherry-pick --abort")
@@ -807,8 +810,10 @@ module GitMaintain
 	    commit_desc = @repo.getCommitHeadline(commit)
             rep = "t"
             while rep != "y"
-                rep = confirm(opts, "pick commit '#{commit_desc}' up ([y]es, [n]o, [b]lacklist)",
-                              false, ["y", "n", "?", "b"])
+                rep = confirm(opts, "pick commit '#{commit_desc}' up",
+                              ignore_default: false,
+                              allowed_reps: ["y", "n", "?", "b"],
+                              usage: " ([y]es, [n]o, show[?], [b]lacklist")
 
                 case rep
                 when "y"
