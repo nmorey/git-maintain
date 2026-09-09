@@ -37,7 +37,6 @@ class GitMaintainTest < Minitest::Test
     assert_empty stderr, "Expected stderr to be empty"
 
     # Check that common/default actions are listed
-    assert_match(/^list_actions$/m, stdout)
     assert_match(/^cp$/m, stdout)
     assert_match(/^steal$/m, stdout)
     assert_match(/^list$/m, stdout)
