@@ -124,4 +124,18 @@ mv CHANGELOG.new CHANGELOG")
                                 { GitMaintain::Branch => CLIClassToolBranch,
                                   GitMaintain::Repo => CLIClassToolRepo})
 
+    # Subclass of GitMaintainBranch for cli_class_workEnv repository.
+    class WorkEnvBranch < GitMaintainBranch
+        # Repository name constant for cli_class_tool.
+        REPO_NAME = "workEnv"
+    end
+
+    # Subclass of GitMaintainRepo for workEnv repository.
+    class WorkEnvRepo < GitMaintainRepo
+    end
+
+    GitMaintain::registerCustom(WorkEnvBranch::REPO_NAME,
+                                { GitMaintain::Branch => WorkEnvBranch,
+                                  GitMaintain::Repo => WorkEnvRepo})
+
 end
