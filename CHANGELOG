@@ -1,3 +1,7 @@
+------------------
+1.1.0  (2026-09-18)
+------------------
+
 * Update to cli_class_tool 2.0.0
 * Use new runXXX API
 
