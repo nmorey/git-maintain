@@ -152,7 +152,7 @@ module GitMaintain
         # @return [String] Cached or fetched config value string
         # @raise [RunError] If running git config fails unexpectedly
         def getGitConfig(entry)
-            return @config_cache[entry] ||= runGit("config #{entry} 2> /dev/null", {}, false).chomp()
+            return @config_cache[entry] ||= runGit("config #{entry}", catch_err: true, silent_err: true).chomp()
         end
 
         # Spawn an interactive subshell (bash), wrapping error conditions into a GitMaintainError.

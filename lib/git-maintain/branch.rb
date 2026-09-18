@@ -713,7 +713,7 @@ module GitMaintain
         # @raise [CherryPickErrorException] If cherry-picking the commit (and its alternatives) fails
         def pick_one(commit)
             cpCmd="cherry-pick --strategy=recursive -Xpatience -x"
-            runGitInteractive("#{cpCmd} #{commit} &> /dev/null", {}, false)
+            runGitInteractive("#{cpCmd} #{commit} &> /dev/null", catch_err: true)
 	    return if $? == 0
 
             if runGit("status -uno --porcelain | wc -l") == "0" then
@@ -725,7 +725,7 @@ module GitMaintain
 	    # That didn't work? Let's try that with every variation of the commit
 	    # in other stable trees.
             @repo.find_alts(commit).each(){|alt_commit|
-		runGitInteractive("#{cpCmd} #{alt_commit} &> /dev/null", {}, false)
+		runGitInteractive("#{cpCmd} #{alt_commit} &> /dev/null", catch_err: true)
 		if $? == 0 then
 		    return
 		end
@@ -734,7 +734,7 @@ module GitMaintain
 
 	    # Still no? Let's go back to the original commit and hand it off to
 	    # the user.
-	    runGitInteractive("#{cpCmd} #{commit} &> /dev/null", {}, false)
+	    runGitInteractive("#{cpCmd} #{commit} &> /dev/null", catch_err: true)
             raise CherryPickErrorException.new("Failed to cherry pick commit #{commit}", commit)
         end
 
@@ -747,7 +747,7 @@ module GitMaintain
         def cp_fix(opts, commit)
             runGitInteractive("diff")
             log( :INFO, "Entering subshell to fix conflicts. Exit when done")
-            runSystem("PS1_WARNING='CP FIX' bash", false)
+            runSystem("PS1_WARNING='CP FIX' bash", catch_err: true)
             rep = confirm(opts, "continue with scp",
                           ignore_default: true,
                           allowed_reps: ["y", "n", "s"],
@@ -825,7 +825,7 @@ module GitMaintain
 		    add_blacklist(commit)
 		    raise CPSkip.new(commit)
                 when "?"
-                    runGitInteractive("show #{commit}", {}, false)
+                    runGitInteractive("show #{commit}", catch_err: true)
                 end
             end
 
