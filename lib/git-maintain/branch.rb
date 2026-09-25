@@ -130,14 +130,10 @@ module GitMaintain
         # @raise [InvalidArgumentError] If options are invalid or conflicting
         def self.check_opts(opts)
             if opts[:action] == :release then
-                if opts[:br_suff] != "master" then
-                    raise InvalidArgumentError.new("Action #{opts[:action]} can only be done on 'master' suffixed branches")
-                end
+                self.check_master_suffix(opts)
             end
             if opts[:action] == :delete && opts[:delete_remote] != true then
-                if opts[:br_suff] == "master" then
-                    raise InvalidArgumentError.new("Action #{opts[:action]} can NOT be done on 'master' suffixed branches")
-                end
+                self.check_master_suffix(opts)
             end
             if opts[:action] == :push
                 if opts[:stable] == true && opts[:push_force] == true then
@@ -329,7 +325,7 @@ module GitMaintain
                 end
             end
 
-            master_sha=runGit("rev-parse origin/master")
+            master_sha=runGit("rev-parse origin/#{@repo.main_ref}")
 
             begin
                 steal_all(opts, "#{base_ref}..#{master_sha}", true)
@@ -781,7 +777,7 @@ module GitMaintain
 		# Let's grab the mainline commit id, this is useful if the version tag
 		# doesn't exist in the commit we're looking at but exists upstream.
 		orig_cmt=runGit("log --no-merges --format=\"%H\" -F --grep \"#{subj}\" " +
-                                      "#{@stable_base}..origin/master | tail -n1")
+                                      "#{@stable_base}..origin/#{@repo.main_ref} | tail -n1")
 
                 if orig_cmt == "" then
                     log(:WARNING, "Could not find commit #{commit} in mainline")

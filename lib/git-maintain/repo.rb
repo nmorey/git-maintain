@@ -42,9 +42,7 @@ module GitMaintain
         # @raise [GitMaintainError] If options are invalid or conflicting
         def self.check_opts(opts)
             if opts[:action] == :submit_release then
-                if opts[:br_suff] != "master" then
-                    raise GitMaintainError.new("Action #{opts[:action]} can only be done on 'master' suffixed branches")
-                end
+                self.check_master_suffix(opts)
             end
         end
 
@@ -75,6 +73,18 @@ module GitMaintain
                                 awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
             @remote_stable=runGit("remote -v | grep -E '^#{@stable_repo}' | grep fetch |
                                       awk '{ print $2}' | sed -e 's/.*://' -e 's/\\.git//'")
+
+            begin
+                runGit("rev-parse master", silent_err: true)
+                @main_ref = "master"
+            rescue RunError
+                begin
+                    runGit("rev-parse main", silent_err: true)
+                    @main_ref = "main"
+                rescue RunError
+                    raise GitMaintainError.new("Repo has no master nor main branch")
+                end
+            end
 
             @auto_fetch = getGitConfig("maintain.autofetch")
             case @auto_fetch
@@ -115,7 +125,7 @@ module GitMaintain
                 @mail_format = @mail_format.to_sym()
             end
         end
-        attr_reader :path, :name, :remote_valid, :remote_stable, :valid_repo, :stable_repo
+        attr_reader :path, :name, :remote_valid, :remote_stable, :valid_repo, :stable_repo, :main_ref
 
 
 

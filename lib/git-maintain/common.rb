@@ -19,6 +19,15 @@ module GitMaintain
             raise GitMaintainError.new(msg)
         end
 
+        # Check whether suffix is a supported value or not
+        #
+        # @param ops [Hash] Option hash
+        # @raise [InvalidArgumentError] If options are invalid or conflicting
+        def self.check_master_suffix(opts)
+            if opts[:br_suff] != "master" && opts[:br_suff] != "main" then
+                raise InvalidArgumentError.new("Action #{opts[:action]} can only be done on 'master' or 'main' suffixed branches")
+            end
+        end
     end
 
     # Internal registry for custom repo-specific adapters.
